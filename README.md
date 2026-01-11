@@ -143,7 +143,7 @@ Ask questions about any changelog versions using the AI assistant:
 
 ```bash
 # Clone the repository
-git clone https://github.com/earlyaidopters/changelog-master.git
+git clone https://github.com/DariuszCiesielski/changelog-master.git
 cd changelog-master
 
 # Install dependencies
@@ -182,6 +182,43 @@ npm run dev:server # Backend on http://localhost:3001
 ```
 
 > **Important:** Always use `npm run dev:all` to start both servers. The backend is required for audio caching, analysis storage, and chat persistence to work properly.
+
+---
+
+## Deployment
+
+### Frontend (Vercel)
+
+1. Push your code to GitHub
+2. Import project in [Vercel Dashboard](https://vercel.com/new)
+3. Set environment variables:
+   - `VITE_GEMINI_API_KEY` - Your Gemini API key
+   - `BACKEND_URL` - URL of your backend server (e.g., `https://your-app.railway.app`)
+4. Deploy
+
+### Backend (Railway)
+
+The backend uses SQLite and requires a persistent server. Deploy to [Railway](https://railway.app):
+
+1. Create new project from GitHub repo
+2. Set root directory to `/`
+3. Set start command: `npm run dev:server`
+4. Add environment variables:
+   - `VITE_GEMINI_API_KEY` - Your Gemini API key
+   - `RESEND_API_KEY` - Your Resend API key
+   - `NOTIFY_EMAIL` - Email for notifications
+5. Deploy and copy the public URL
+6. Add this URL as `BACKEND_URL` in Vercel
+
+### Alternative: Single Server Deployment
+
+For simpler setups, deploy everything to Railway:
+
+```bash
+npm run build && npm run dev:server
+```
+
+The backend serves the static frontend from `dist/` folder.
 
 ---
 
