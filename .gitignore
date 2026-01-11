@@ -1,0 +1,40 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Build
+dist
+dist-ssr
+*.local
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# TypeScript
+*.tsbuildinfo
+*.d.ts.map
+
+# Database
+data/
+
+# Documentation (private)
+docs/
+
+# Generated files
+vite.config.d.ts

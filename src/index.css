@@ -1,0 +1,488 @@
+@import "tailwindcss";
+
+/* Enable class-based dark mode */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ============================================
+   ANTHROPIC-INSPIRED DESIGN SYSTEM
+   Warm, elegant, and refined
+   ============================================ */
+
+/* Tailwind v4 Theme Extension */
+@theme {
+  /* Light mode colors (default) */
+  --color-cream-50: #faf9f6;
+  --color-cream-100: #f5f4f0;
+  --color-cream-200: #edecea;
+  --color-cream-300: #e5e4e0;
+  --color-cream-400: #d4d3cf;
+
+  /* Warm dark colors */
+  --color-charcoal-900: #1c1c1e;
+  --color-charcoal-800: #252527;
+  --color-charcoal-700: #2e2e30;
+  --color-charcoal-600: #323234;
+  --color-charcoal-500: #3a3a3c;
+  --color-charcoal-400: #4a4a4c;
+
+  /* Coral accent (Anthropic style) */
+  --color-coral-400: #e8a990;
+  --color-coral-500: #e09070;
+  --color-coral-600: #cc785c;
+  --color-coral-700: #b8694f;
+
+  /* Teal accent */
+  --color-teal-300: #8ad0c2;
+  --color-teal-400: #6fc2b0;
+  --color-teal-500: #5eae9e;
+  --color-teal-600: #4d9a8b;
+  --color-teal-700: #2a4a44;
+}
+
+:root {
+  /* Light mode - Warm cream palette */
+  --bg-primary: #faf9f6;
+  --bg-secondary: #f5f4f0;
+  --bg-tertiary: #edecea;
+  --bg-elevated: #ffffff;
+
+  /* Text colors */
+  --text-primary: #1a1a1a;
+  --text-secondary: #5c5c5c;
+  --text-tertiary: #8a8a8a;
+  --text-inverse: #faf9f6;
+
+  /* Accent colors - Coral/Salmon (Anthropic style) */
+  --accent-primary: #cc785c;
+  --accent-primary-hover: #b8694f;
+  --accent-secondary: #e8a990;
+
+  /* Teal accent (Anthropic Economic Futures) */
+  --teal: #5eae9e;
+  --teal-hover: #4d9a8b;
+  --teal-light: #d4ece8;
+
+  /* Semantic colors */
+  --success: #5eae9e;
+  --warning: #d4a373;
+  --error: #c75c5c;
+  --info: #7094b8;
+
+  /* Borders & shadows */
+  --border-color: #e5e4e0;
+  --border-color-strong: #d4d3cf;
+  --shadow-color: rgba(0, 0, 0, 0.06);
+  --shadow-color-strong: rgba(0, 0, 0, 0.1);
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+  --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark {
+  /* Dark mode - Warm charcoal palette */
+  --bg-primary: #1c1c1e;
+  --bg-secondary: #252527;
+  --bg-tertiary: #2e2e30;
+  --bg-elevated: #323234;
+
+  /* Text colors */
+  --text-primary: #f5f5f5;
+  --text-secondary: #a8a8a8;
+  --text-tertiary: #727272;
+  --text-inverse: #1c1c1e;
+
+  /* Accent colors - Softer coral for dark mode */
+  --accent-primary: #e09070;
+  --accent-primary-hover: #e8a590;
+  --accent-secondary: #c77860;
+
+  /* Teal accent */
+  --teal: #6fc2b0;
+  --teal-hover: #8ad0c2;
+  --teal-light: #2a4a44;
+
+  /* Semantic colors */
+  --success: #6fc2b0;
+  --warning: #e0b080;
+  --error: #e08080;
+  --info: #80a8c8;
+
+  /* Borders & shadows */
+  --border-color: #3a3a3c;
+  --border-color-strong: #4a4a4c;
+  --shadow-color: rgba(0, 0, 0, 0.3);
+  --shadow-color-strong: rgba(0, 0, 0, 0.5);
+}
+
+/* ============================================
+   BASE STYLES
+   ============================================ */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition:
+    background-color var(--transition-slow),
+    color var(--transition-normal);
+}
+
+/* ============================================
+   SMOOTH THEME TRANSITIONS
+   ============================================ */
+
+/* Apply transitions to all theme-affected elements */
+*,
+*::before,
+*::after {
+  transition:
+    background-color var(--transition-slow),
+    border-color var(--transition-normal),
+    box-shadow var(--transition-normal),
+    color var(--transition-normal);
+}
+
+/* Disable transitions for elements that shouldn't animate */
+.no-transition,
+.no-transition * {
+  transition: none !important;
+}
+
+/* ============================================
+   TYPOGRAPHY
+   ============================================ */
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+/* ============================================
+   PROSE STYLES (Markdown content)
+   ============================================ */
+
+.prose {
+  line-height: 1.7;
+  color: var(--text-primary);
+}
+
+.prose code {
+  background-color: var(--bg-tertiary);
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.375rem;
+  font-size: 0.875em;
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  font-weight: 500;
+  border: 1px solid var(--border-color);
+}
+
+.prose pre {
+  background-color: #1e1e1e;
+  color: #e5e5e5;
+  padding: 1.25rem;
+  border-radius: 0.75rem;
+  overflow-x: auto;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 12px var(--shadow-color);
+}
+
+.dark .prose pre {
+  background-color: #0d0d0d;
+  border-color: var(--border-color-strong);
+}
+
+.prose pre code {
+  background-color: transparent;
+  padding: 0;
+  border: none;
+  font-weight: 400;
+}
+
+.prose a {
+  color: var(--accent-primary);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: all var(--transition-fast);
+}
+
+.prose a:hover {
+  color: var(--accent-primary-hover);
+  border-bottom-color: var(--accent-primary-hover);
+}
+
+.prose blockquote {
+  border-left: 3px solid var(--teal);
+  padding-left: 1rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  margin: 1.5rem 0;
+  background: linear-gradient(90deg, var(--teal-light) 0%, transparent 100%);
+  padding: 1rem 1rem 1rem 1.5rem;
+  border-radius: 0 0.5rem 0.5rem 0;
+}
+
+.prose ul, .prose ol {
+  padding-left: 1.5rem;
+}
+
+.prose li {
+  margin-bottom: 0.5rem;
+}
+
+.prose li::marker {
+  color: var(--teal);
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-primary-hover) 100%);
+  color: white;
+  border: none;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.625rem;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(204, 120, 92, 0.3);
+  transition: all var(--transition-fast);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(204, 120, 92, 0.4);
+}
+
+.btn-secondary {
+  background-color: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.625rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-secondary:hover {
+  background-color: var(--bg-tertiary);
+  border-color: var(--border-color-strong);
+}
+
+.btn-teal {
+  background: linear-gradient(135deg, var(--teal) 0%, var(--teal-hover) 100%);
+  color: white;
+  border: none;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.625rem;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(94, 174, 158, 0.3);
+  transition: all var(--transition-fast);
+}
+
+.btn-teal:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(94, 174, 158, 0.4);
+}
+
+/* ============================================
+   CARDS
+   ============================================ */
+
+.card {
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  box-shadow: 0 2px 8px var(--shadow-color);
+  transition: all var(--transition-normal);
+}
+
+.card:hover {
+  box-shadow: 0 8px 24px var(--shadow-color-strong);
+}
+
+.card-elevated {
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  box-shadow:
+    0 4px 16px var(--shadow-color),
+    0 0 0 1px var(--border-color);
+}
+
+/* ============================================
+   FORMS
+   ============================================ */
+
+input, select, textarea {
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: 0.625rem;
+  padding: 0.625rem 0.875rem;
+  color: var(--text-primary);
+  font-size: 0.9375rem;
+  transition: all var(--transition-fast);
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px var(--teal-light);
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--text-tertiary);
+}
+
+/* ============================================
+   CUSTOM SCROLLBAR
+   ============================================ */
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color-strong);
+  border-radius: 5px;
+  border: 2px solid var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+
+/* ============================================
+   CUSTOM CLASSES FOR TAILWIND OVERRIDES
+   ============================================ */
+
+/* Background utilities */
+.bg-primary { background-color: var(--bg-primary); }
+.bg-secondary { background-color: var(--bg-secondary); }
+.bg-tertiary { background-color: var(--bg-tertiary); }
+.bg-elevated { background-color: var(--bg-elevated); }
+
+/* Text utilities */
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-tertiary { color: var(--text-tertiary); }
+
+/* Border utilities */
+.border-theme { border-color: var(--border-color); }
+.border-theme-strong { border-color: var(--border-color-strong); }
+
+/* Accent colors */
+.text-accent { color: var(--accent-primary); }
+.bg-accent { background-color: var(--accent-primary); }
+.text-teal { color: var(--teal); }
+.bg-teal { background-color: var(--teal); }
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.animate-fade-in {
+  animation: fadeIn var(--transition-slow) ease-out forwards;
+}
+
+.animate-slide-in {
+  animation: slideIn var(--transition-slow) ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn var(--transition-slow) ease-out forwards;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+/* ============================================
+   SPECIAL EFFECTS
+   ============================================ */
+
+/* Glassmorphism effect */
+.glass {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.dark .glass {
+  background: rgba(28, 28, 30, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Glow effects */
+.glow-teal {
+  box-shadow: 0 0 20px rgba(94, 174, 158, 0.3);
+}
+
+.glow-coral {
+  box-shadow: 0 0 20px rgba(204, 120, 92, 0.3);
+}
+
+/* ============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================ */
+
+@media (max-width: 640px) {
+  :root {
+    --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
