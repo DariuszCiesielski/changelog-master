@@ -1,9 +1,8 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import Database from 'better-sqlite3';
+import { createClient } from '@libsql/client';
 import path from 'path';
-import fs from 'fs';
 import { fileURLToPath } from 'url';
 import cron, { ScheduledTask } from 'node-cron';
 
@@ -19,92 +18,95 @@ const GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY;
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const NOTIFY_EMAIL = process.env.NOTIFY_EMAIL;
 
-// Initialize SQLite database
-const dbPath = path.join(__dirname, '..', 'data', 'audio.db');
-const dbDir = path.dirname(dbPath);
-
-// Ensure the database directory exists
-if (!fs.existsSync(dbDir)) {
-  fs.mkdirSync(dbDir, { recursive: true });
-}
-
-const db = new Database(dbPath);
+// Initialize Turso database
+const db = createClient({
+  url: process.env.TURSO_DATABASE_URL || 'file:local.db',
+  authToken: process.env.TURSO_AUTH_TOKEN,
+});
 
 // Create tables
-db.exec(`
-  CREATE TABLE IF NOT EXISTS audio_cache (
-    id TEXT PRIMARY KEY,
-    text_hash TEXT NOT NULL,
-    voice TEXT NOT NULL,
-    audio_data BLOB NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
+async function initDatabase() {
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS audio_cache (
+      id TEXT PRIMARY KEY,
+      text_hash TEXT NOT NULL,
+      voice TEXT NOT NULL,
+      audio_data TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
 
-  CREATE INDEX IF NOT EXISTS idx_audio_hash_voice ON audio_cache(text_hash, voice);
+  await db.execute(`CREATE INDEX IF NOT EXISTS idx_audio_hash_voice ON audio_cache(text_hash, voice)`);
 
-  CREATE TABLE IF NOT EXISTS settings (
-    key TEXT PRIMARY KEY,
-    value TEXT NOT NULL
-  );
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    )
+  `);
 
-  CREATE TABLE IF NOT EXISTS changelog_history (
-    version TEXT PRIMARY KEY,
-    detected_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    notified BOOLEAN DEFAULT 0
-  );
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS changelog_history (
+      version TEXT PRIMARY KEY,
+      detected_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      notified INTEGER DEFAULT 0,
+      source_id TEXT
+    )
+  `);
 
-  CREATE TABLE IF NOT EXISTS chat_conversations (
-    id TEXT PRIMARY KEY,
-    title TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS chat_conversations (
+      id TEXT PRIMARY KEY,
+      title TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
 
-  CREATE TABLE IF NOT EXISTS chat_messages (
-    id TEXT PRIMARY KEY,
-    conversation_id TEXT NOT NULL,
-    role TEXT NOT NULL,
-    content TEXT NOT NULL,
-    selected_versions TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (conversation_id) REFERENCES chat_conversations(id) ON DELETE CASCADE
-  );
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS chat_messages (
+      id TEXT PRIMARY KEY,
+      conversation_id TEXT NOT NULL,
+      role TEXT NOT NULL,
+      content TEXT NOT NULL,
+      selected_versions TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
 
-  CREATE INDEX IF NOT EXISTS idx_chat_messages_conversation ON chat_messages(conversation_id);
+  await db.execute(`CREATE INDEX IF NOT EXISTS idx_chat_messages_conversation ON chat_messages(conversation_id)`);
 
-  CREATE TABLE IF NOT EXISTS analysis_cache (
-    version TEXT PRIMARY KEY,
-    analysis_json TEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS analysis_cache (
+      version TEXT PRIMARY KEY,
+      analysis_json TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
 
-  CREATE TABLE IF NOT EXISTS changelog_sources (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    url TEXT NOT NULL UNIQUE,
-    is_active BOOLEAN DEFAULT 1,
-    last_version TEXT,
-    last_checked_at DATETIME,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS changelog_sources (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      url TEXT NOT NULL UNIQUE,
+      is_active INTEGER DEFAULT 1,
+      last_version TEXT,
+      last_checked_at DATETIME,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
 
-  CREATE INDEX IF NOT EXISTS idx_changelog_sources_active ON changelog_sources(is_active);
-`);
+  await db.execute(`CREATE INDEX IF NOT EXISTS idx_changelog_sources_active ON changelog_sources(is_active)`);
 
-// Migrate existing changelog_history to support source_id
-try {
-  db.exec(`ALTER TABLE changelog_history ADD COLUMN source_id TEXT`);
-} catch {
-  // Column already exists
-}
-
-// Seed default source if none exists
-const sourceCount = (db.prepare('SELECT COUNT(*) as count FROM changelog_sources').get() as { count: number }).count;
-if (sourceCount === 0) {
-  db.prepare(`
-    INSERT INTO changelog_sources (id, name, url, is_active)
-    VALUES (?, ?, ?, 1)
-  `).run('src_claude_code', 'Claude Code', DEFAULT_CHANGELOG_URL);
+  // Seed default source if none exists
+  const result = await db.execute('SELECT COUNT(*) as count FROM changelog_sources');
+  const count = result.rows[0]?.count as number;
+  if (count === 0) {
+    await db.execute({
+      sql: 'INSERT INTO changelog_sources (id, name, url, is_active) VALUES (?, ?, ?, 1)',
+      args: ['src_claude_code', 'Claude Code', DEFAULT_CHANGELOG_URL],
+    });
+  }
 }
 
 app.use(cors());
@@ -120,18 +122,17 @@ function intervalToCron(intervalMs: number): string | null {
   const minutes = intervalMs / 60000;
 
   if (minutes <= 0) return null;
-  if (minutes === 1) return '* * * * *';           // Every minute
-  if (minutes === 5) return '*/5 * * * *';         // Every 5 minutes
-  if (minutes === 15) return '*/15 * * * *';       // Every 15 minutes
-  if (minutes === 30) return '*/30 * * * *';       // Every 30 minutes
-  if (minutes === 60) return '0 * * * *';          // Every hour
-  if (minutes === 360) return '0 */6 * * *';       // Every 6 hours
-  if (minutes === 720) return '0 */12 * * *';      // Every 12 hours
-  if (minutes === 1440) return '0 0 * * *';        // Once a day (midnight)
-  if (minutes === 10080) return '0 0 * * 0';       // Once a week (Sunday midnight)
-  if (minutes === 20160) return '0 0 1,15 * *';    // Every two weeks (1st and 15th)
+  if (minutes === 1) return '* * * * *';
+  if (minutes === 5) return '*/5 * * * *';
+  if (minutes === 15) return '*/15 * * * *';
+  if (minutes === 30) return '*/30 * * * *';
+  if (minutes === 60) return '0 * * * *';
+  if (minutes === 360) return '0 */6 * * *';
+  if (minutes === 720) return '0 */12 * * *';
+  if (minutes === 1440) return '0 0 * * *';
+  if (minutes === 10080) return '0 0 * * 0';
+  if (minutes === 20160) return '0 0 1,15 * *';
 
-  // Default: convert to nearest minute interval
   return `*/${Math.max(1, Math.round(minutes))} * * * *`;
 }
 
@@ -144,38 +145,58 @@ interface ChangelogSource {
   last_checked_at: string | null;
 }
 
-function getActiveSources(): ChangelogSource[] {
-  const stmt = db.prepare('SELECT * FROM changelog_sources WHERE is_active = 1');
-  return stmt.all() as ChangelogSource[];
+async function getActiveSources(): Promise<ChangelogSource[]> {
+  const result = await db.execute('SELECT * FROM changelog_sources WHERE is_active = 1');
+  return result.rows.map(row => ({
+    id: row.id as string,
+    name: row.name as string,
+    url: row.url as string,
+    is_active: Boolean(row.is_active),
+    last_version: row.last_version as string | null,
+    last_checked_at: row.last_checked_at as string | null,
+  }));
 }
 
-function getAllSources(): ChangelogSource[] {
-  const stmt = db.prepare('SELECT * FROM changelog_sources ORDER BY created_at ASC');
-  return stmt.all() as ChangelogSource[];
+async function getAllSources(): Promise<ChangelogSource[]> {
+  const result = await db.execute('SELECT * FROM changelog_sources ORDER BY created_at ASC');
+  return result.rows.map(row => ({
+    id: row.id as string,
+    name: row.name as string,
+    url: row.url as string,
+    is_active: Boolean(row.is_active),
+    last_version: row.last_version as string | null,
+    last_checked_at: row.last_checked_at as string | null,
+  }));
 }
 
-function getLastKnownVersion(sourceId?: string): string | null {
+async function getLastKnownVersion(sourceId?: string): Promise<string | null> {
   if (sourceId) {
-    const stmt = db.prepare('SELECT version FROM changelog_history WHERE source_id = ? ORDER BY detected_at DESC LIMIT 1');
-    const row = stmt.get(sourceId) as { version: string } | undefined;
-    return row?.version ?? null;
+    const result = await db.execute({
+      sql: 'SELECT version FROM changelog_history WHERE source_id = ? ORDER BY detected_at DESC LIMIT 1',
+      args: [sourceId],
+    });
+    return (result.rows[0]?.version as string) ?? null;
   }
-  const stmt = db.prepare('SELECT version FROM changelog_history ORDER BY detected_at DESC LIMIT 1');
-  const row = stmt.get() as { version: string } | undefined;
-  return row?.version ?? null;
+  const result = await db.execute('SELECT version FROM changelog_history ORDER BY detected_at DESC LIMIT 1');
+  return (result.rows[0]?.version as string) ?? null;
 }
 
-function saveVersion(version: string, sourceId: string): void {
-  const stmt = db.prepare('INSERT OR IGNORE INTO changelog_history (version, source_id) VALUES (?, ?)');
-  stmt.run(version, sourceId);
-
-  // Update source's last_version
-  db.prepare('UPDATE changelog_sources SET last_version = ?, last_checked_at = CURRENT_TIMESTAMP WHERE id = ?').run(version, sourceId);
+async function saveVersion(version: string, sourceId: string): Promise<void> {
+  await db.execute({
+    sql: 'INSERT OR IGNORE INTO changelog_history (version, source_id) VALUES (?, ?)',
+    args: [version, sourceId],
+  });
+  await db.execute({
+    sql: 'UPDATE changelog_sources SET last_version = ?, last_checked_at = CURRENT_TIMESTAMP WHERE id = ?',
+    args: [version, sourceId],
+  });
 }
 
-function markVersionNotified(version: string, sourceId: string): void {
-  const stmt = db.prepare('UPDATE changelog_history SET notified = 1 WHERE version = ? AND source_id = ?');
-  stmt.run(version, sourceId);
+async function markVersionNotified(version: string, sourceId: string): Promise<void> {
+  await db.execute({
+    sql: 'UPDATE changelog_history SET notified = 1 WHERE version = ? AND source_id = ?',
+    args: [version, sourceId],
+  });
 }
 
 async function fetchChangelog(url: string): Promise<string> {
@@ -193,7 +214,7 @@ function parseLatestVersion(markdown: string): { version: string; content: strin
   for (const line of lines) {
     const versionMatch = line.match(/^##\s+\[?(\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?)\]?/);
     if (versionMatch) {
-      if (capturing) break; // Stop at second version
+      if (capturing) break;
       version = versionMatch[1];
       capturing = true;
       content.push(line);
@@ -203,6 +224,22 @@ function parseLatestVersion(markdown: string): { version: string; content: strin
   }
 
   return version ? { version, content: content.join('\n') } : null;
+}
+
+interface ChangelogEmailRequest {
+  version: string;
+  tldr: string;
+  categories: {
+    critical_breaking_changes: string[];
+    removals: { feature: string; severity: string; why: string }[];
+    major_features: string[];
+    important_fixes: string[];
+    new_slash_commands: string[];
+    terminal_improvements: string[];
+    api_changes: string[];
+  };
+  action_items: string[];
+  sentiment: string;
 }
 
 async function analyzeChangelog(changelogText: string): Promise<ChangelogEmailRequest | null> {
@@ -228,7 +265,7 @@ Changelog:
 ${changelogText}`;
 
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -245,11 +282,9 @@ ${changelogText}`;
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) return null;
 
-  // Try to extract JSON from the response (sometimes Gemini adds extra text)
   try {
     return JSON.parse(text);
   } catch {
-    // Try to find JSON object in the text
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       return JSON.parse(jsonMatch[0]);
@@ -282,7 +317,6 @@ async function generateTTSAudio(text: string, voice: string = 'Charon'): Promise
   const base64Audio = data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
   if (!base64Audio) return null;
 
-  // Convert PCM to WAV
   const pcmBuffer = Buffer.from(base64Audio, 'base64');
   return pcmToWav(pcmBuffer);
 }
@@ -365,24 +399,31 @@ async function checkSourceForNewChangelog(source: ChangelogSource): Promise<void
       return;
     }
 
-    const lastKnown = getLastKnownVersion(source.id);
+    const lastKnown = await getLastKnownVersion(source.id);
     console.log(`[Monitor] ${source.name}: Latest: ${latest.version}, Last known: ${lastKnown}`);
 
-    // Check settings
-    const settingsStmt = db.prepare('SELECT value FROM settings WHERE key = ?');
-    const notifyEnabled = settingsStmt.get('emailNotificationsEnabled') as { value: string } | undefined;
-    const alwaysSendEmail = settingsStmt.get('alwaysSendEmail') as { value: string } | undefined;
+    const notifyEnabledResult = await db.execute({
+      sql: 'SELECT value FROM settings WHERE key = ?',
+      args: ['emailNotificationsEnabled'],
+    });
+    const alwaysSendEmailResult = await db.execute({
+      sql: 'SELECT value FROM settings WHERE key = ?',
+      args: ['alwaysSendEmail'],
+    });
 
-    if (notifyEnabled?.value !== 'true') {
+    const notifyEnabled = notifyEnabledResult.rows[0]?.value as string | undefined;
+    const alwaysSendEmail = alwaysSendEmailResult.rows[0]?.value as string | undefined;
+
+    if (notifyEnabled !== 'true') {
       console.log(`[Monitor] Email notifications disabled for ${source.name}, skipping`);
       if (lastKnown !== latest.version) {
-        saveVersion(latest.version, source.id);
+        await saveVersion(latest.version, source.id);
       }
       return;
     }
 
     const isNewVersion = lastKnown !== latest.version;
-    const shouldSendEmail = isNewVersion || alwaysSendEmail?.value === 'true';
+    const shouldSendEmail = isNewVersion || alwaysSendEmail === 'true';
 
     if (!shouldSendEmail) {
       console.log(`[Monitor] ${source.name}: No new version and always-send disabled`);
@@ -391,12 +432,11 @@ async function checkSourceForNewChangelog(source: ChangelogSource): Promise<void
 
     if (isNewVersion) {
       console.log(`[Monitor] ${source.name}: New version detected: ${latest.version}`);
-      saveVersion(latest.version, source.id);
+      await saveVersion(latest.version, source.id);
     } else {
       console.log(`[Monitor] ${source.name}: Sending scheduled email for current version`);
     }
 
-    // Analyze the changelog
     console.log(`[Monitor] Analyzing changelog for ${source.name}...`);
     const analysis = await analyzeChangelog(latest.content);
 
@@ -407,18 +447,19 @@ async function checkSourceForNewChangelog(source: ChangelogSource): Promise<void
 
     analysis.version = `${source.name} ${latest.version}`;
 
-    // Generate audio
     console.log(`[Monitor] Generating audio for ${source.name}...`);
-    const voiceSetting = settingsStmt.get('notificationVoice') as { value: string } | undefined;
-    const voice = voiceSetting?.value || 'Charon';
+    const voiceSettingResult = await db.execute({
+      sql: 'SELECT value FROM settings WHERE key = ?',
+      args: ['notificationVoice'],
+    });
+    const voice = (voiceSettingResult.rows[0]?.value as string) || 'Charon';
     const audioBuffer = await generateTTSAudio(analysis.tldr, voice);
 
-    // Send email
     console.log(`[Monitor] Sending notification email for ${source.name}...`);
     const sent = await sendEmailWithAttachment(analysis, audioBuffer);
 
     if (sent) {
-      markVersionNotified(latest.version, source.id);
+      await markVersionNotified(latest.version, source.id);
       console.log(`[Monitor] Notification sent for ${source.name} ${latest.version}`);
     } else {
       console.log(`[Monitor] Failed to send notification for ${source.name}`);
@@ -431,7 +472,7 @@ async function checkSourceForNewChangelog(source: ChangelogSource): Promise<void
 async function checkForNewChangelog(): Promise<void> {
   console.log('[Monitor] Starting changelog check for all active sources...');
 
-  const sources = getActiveSources();
+  const sources = await getActiveSources();
 
   if (sources.length === 0) {
     console.log('[Monitor] No active sources configured');
@@ -448,7 +489,6 @@ async function checkForNewChangelog(): Promise<void> {
 }
 
 function startMonitoring(intervalMs: number): void {
-  // Stop existing cron job if any
   stopMonitoring();
 
   const cronExpression = intervalToCron(intervalMs);
@@ -461,10 +501,8 @@ function startMonitoring(intervalMs: number): void {
   console.log(`[Monitor] Starting cron job: "${cronExpression}" (every ${intervalMs / 60000} minutes)`);
   currentCronExpression = cronExpression;
 
-  // Check immediately on start
   checkForNewChangelog();
 
-  // Schedule cron job
   cronJob = cron.schedule(cronExpression, () => {
     console.log(`[Cron] Running scheduled check at ${new Date().toISOString()}`);
     checkForNewChangelog();
@@ -485,21 +523,24 @@ function stopMonitoring(): void {
 // ============ Express Routes ============
 
 // Audio cache endpoints
-app.get('/api/audio/:textHash/:voice', (req, res) => {
+app.get('/api/audio/:textHash/:voice', async (req, res) => {
   const { textHash, voice } = req.params;
 
-  const stmt = db.prepare('SELECT audio_data FROM audio_cache WHERE text_hash = ? AND voice = ?');
-  const row = stmt.get(textHash, voice) as { audio_data: Buffer } | undefined;
+  const result = await db.execute({
+    sql: 'SELECT audio_data FROM audio_cache WHERE text_hash = ? AND voice = ?',
+    args: [textHash, voice],
+  });
 
-  if (row) {
+  if (result.rows.length > 0) {
+    const audioData = result.rows[0].audio_data as string;
     res.set('Content-Type', 'audio/wav');
-    res.send(row.audio_data);
+    res.send(Buffer.from(audioData, 'base64'));
   } else {
     res.status(404).json({ error: 'Audio not found' });
   }
 });
 
-app.post('/api/audio', (req, res) => {
+app.post('/api/audio', async (req, res) => {
   const { textHash, voice, audioData } = req.body;
 
   if (!textHash || !voice || !audioData) {
@@ -508,14 +549,12 @@ app.post('/api/audio', (req, res) => {
   }
 
   try {
-    const buffer = Buffer.from(audioData, 'base64');
     const id = `${textHash}_${voice}_${Date.now()}`;
 
-    const stmt = db.prepare(`
-      INSERT OR REPLACE INTO audio_cache (id, text_hash, voice, audio_data)
-      VALUES (?, ?, ?, ?)
-    `);
-    stmt.run(id, textHash, voice, buffer);
+    await db.execute({
+      sql: 'INSERT OR REPLACE INTO audio_cache (id, text_hash, voice, audio_data) VALUES (?, ?, ?, ?)',
+      args: [id, textHash, voice, audioData],
+    });
 
     res.json({ success: true, id });
   } catch (error) {
@@ -524,45 +563,55 @@ app.post('/api/audio', (req, res) => {
   }
 });
 
-app.get('/api/audio/list', (_req, res) => {
-  const stmt = db.prepare(`
+app.get('/api/audio/list', async (_req, res) => {
+  const result = await db.execute(`
     SELECT id, text_hash, voice, created_at, LENGTH(audio_data) as size
     FROM audio_cache
     ORDER BY created_at DESC
   `);
-  const rows = stmt.all();
-  res.json(rows);
+  res.json(result.rows);
 });
 
-app.delete('/api/audio/:id', (req, res) => {
+app.delete('/api/audio/:id', async (req, res) => {
   const { id } = req.params;
-  const stmt = db.prepare('DELETE FROM audio_cache WHERE id = ?');
-  stmt.run(id);
+  await db.execute({
+    sql: 'DELETE FROM audio_cache WHERE id = ?',
+    args: [id],
+  });
   res.json({ success: true });
 });
 
 // Settings endpoints
-app.get('/api/settings/:key', (req, res) => {
+app.get('/api/settings/:key', async (req, res) => {
   const { key } = req.params;
-  const stmt = db.prepare('SELECT value FROM settings WHERE key = ?');
-  const row = stmt.get(key) as { value: string } | undefined;
-  res.json({ value: row?.value ?? null });
+  const result = await db.execute({
+    sql: 'SELECT value FROM settings WHERE key = ?',
+    args: [key],
+  });
+  res.json({ value: (result.rows[0]?.value as string) ?? null });
 });
 
-app.post('/api/settings/:key', (req, res) => {
+app.post('/api/settings/:key', async (req, res) => {
   const { key } = req.params;
   const { value } = req.body;
 
-  const stmt = db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)');
-  stmt.run(key, value);
+  await db.execute({
+    sql: 'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
+    args: [key, value],
+  });
 
-  // Handle monitoring settings
   if (key === 'emailNotificationsEnabled' || key === 'notificationCheckInterval') {
-    const enabledRow = db.prepare('SELECT value FROM settings WHERE key = ?').get('emailNotificationsEnabled') as { value: string } | undefined;
-    const intervalRow = db.prepare('SELECT value FROM settings WHERE key = ?').get('notificationCheckInterval') as { value: string } | undefined;
+    const enabledResult = await db.execute({
+      sql: 'SELECT value FROM settings WHERE key = ?',
+      args: ['emailNotificationsEnabled'],
+    });
+    const intervalResult = await db.execute({
+      sql: 'SELECT value FROM settings WHERE key = ?',
+      args: ['notificationCheckInterval'],
+    });
 
-    const enabled = enabledRow?.value === 'true';
-    const interval = parseInt(intervalRow?.value || '0') || 0;
+    const enabled = enabledResult.rows[0]?.value === 'true';
+    const interval = parseInt((intervalResult.rows[0]?.value as string) || '0') || 0;
 
     if (enabled && interval > 0) {
       startMonitoring(interval);
@@ -574,12 +623,11 @@ app.post('/api/settings/:key', (req, res) => {
   res.json({ success: true });
 });
 
-app.get('/api/settings', (_req, res) => {
-  const stmt = db.prepare('SELECT key, value FROM settings');
-  const rows = stmt.all() as { key: string; value: string }[];
+app.get('/api/settings', async (_req, res) => {
+  const result = await db.execute('SELECT key, value FROM settings');
   const settings: Record<string, string> = {};
-  rows.forEach((row) => {
-    settings[row.key] = row.value;
+  result.rows.forEach((row) => {
+    settings[row.key as string] = row.value as string;
   });
   res.json(settings);
 });
@@ -600,20 +648,20 @@ app.post('/api/send-demo-email', async (req, res) => {
   try {
     const { voice = 'Charon', sourceId } = req.body;
 
-    // Get source URL
     let sourceUrl = DEFAULT_CHANGELOG_URL;
     let sourceName = 'Claude Code';
 
     if (sourceId) {
-      const stmt = db.prepare('SELECT * FROM changelog_sources WHERE id = ?');
-      const source = stmt.get(sourceId) as ChangelogSource | undefined;
-      if (source) {
-        sourceUrl = source.url;
-        sourceName = source.name;
+      const result = await db.execute({
+        sql: 'SELECT * FROM changelog_sources WHERE id = ?',
+        args: [sourceId],
+      });
+      if (result.rows.length > 0) {
+        sourceUrl = result.rows[0].url as string;
+        sourceName = result.rows[0].name as string;
       }
     } else {
-      // Use first active source
-      const sources = getActiveSources();
+      const sources = await getActiveSources();
       if (sources.length > 0) {
         sourceUrl = sources[0].url;
         sourceName = sources[0].name;
@@ -657,50 +705,56 @@ app.post('/api/send-demo-email', async (req, res) => {
   }
 });
 
-app.get('/api/monitor/status', (_req, res) => {
-  const enabledRow = db.prepare('SELECT value FROM settings WHERE key = ?').get('emailNotificationsEnabled') as { value: string } | undefined;
-  const intervalRow = db.prepare('SELECT value FROM settings WHERE key = ?').get('notificationCheckInterval') as { value: string } | undefined;
-  const lastVersion = getLastKnownVersion();
+app.get('/api/monitor/status', async (_req, res) => {
+  const enabledResult = await db.execute({
+    sql: 'SELECT value FROM settings WHERE key = ?',
+    args: ['emailNotificationsEnabled'],
+  });
+  const intervalResult = await db.execute({
+    sql: 'SELECT value FROM settings WHERE key = ?',
+    args: ['notificationCheckInterval'],
+  });
+  const lastVersion = await getLastKnownVersion();
 
   res.json({
-    enabled: enabledRow?.value === 'true',
-    interval: parseInt(intervalRow?.value || '0') || 0,
+    enabled: enabledResult.rows[0]?.value === 'true',
+    interval: parseInt((intervalResult.rows[0]?.value as string) || '0') || 0,
     lastKnownVersion: lastVersion,
     isRunning: cronJob !== null,
     cronExpression: currentCronExpression,
   });
 });
 
-app.get('/api/monitor/history', (_req, res) => {
-  const stmt = db.prepare('SELECT version, detected_at, notified, source_id FROM changelog_history ORDER BY detected_at DESC LIMIT 20');
-  const rows = stmt.all();
-  res.json(rows);
+app.get('/api/monitor/history', async (_req, res) => {
+  const result = await db.execute(
+    'SELECT version, detected_at, notified, source_id FROM changelog_history ORDER BY detected_at DESC LIMIT 20'
+  );
+  res.json(result.rows);
 });
 
 // ============ Changelog Sources Endpoints ============
 
-// Get all sources
-app.get('/api/sources', (_req, res) => {
-  const sources = getAllSources();
+app.get('/api/sources', async (_req, res) => {
+  const sources = await getAllSources();
   res.json(sources);
 });
 
-// Get a single source
-app.get('/api/sources/:id', (req, res) => {
+app.get('/api/sources/:id', async (req, res) => {
   const { id } = req.params;
-  const stmt = db.prepare('SELECT * FROM changelog_sources WHERE id = ?');
-  const source = stmt.get(id);
+  const result = await db.execute({
+    sql: 'SELECT * FROM changelog_sources WHERE id = ?',
+    args: [id],
+  });
 
-  if (!source) {
+  if (result.rows.length === 0) {
     res.status(404).json({ error: 'Source not found' });
     return;
   }
 
-  res.json(source);
+  res.json(result.rows[0]);
 });
 
-// Create a new source
-app.post('/api/sources', (req, res) => {
+app.post('/api/sources', async (req, res) => {
   const { name, url } = req.body;
 
   if (!name || !url) {
@@ -708,7 +762,6 @@ app.post('/api/sources', (req, res) => {
     return;
   }
 
-  // Validate URL format
   try {
     new URL(url);
   } catch {
@@ -719,15 +772,14 @@ app.post('/api/sources', (req, res) => {
   const id = `src_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
   try {
-    const stmt = db.prepare(`
-      INSERT INTO changelog_sources (id, name, url, is_active)
-      VALUES (?, ?, ?, 1)
-    `);
-    stmt.run(id, name, url);
+    await db.execute({
+      sql: 'INSERT INTO changelog_sources (id, name, url, is_active) VALUES (?, ?, ?, 1)',
+      args: [id, name, url],
+    });
 
     res.json({ id, name, url, is_active: true });
   } catch (error: unknown) {
-    if ((error as { code?: string }).code === 'SQLITE_CONSTRAINT_UNIQUE') {
+    if ((error as { code?: string }).code === 'SQLITE_CONSTRAINT') {
       res.status(409).json({ error: 'A source with this URL already exists' });
     } else {
       console.error('Failed to create source:', error);
@@ -736,13 +788,12 @@ app.post('/api/sources', (req, res) => {
   }
 });
 
-// Update a source
-app.patch('/api/sources/:id', (req, res) => {
+app.patch('/api/sources/:id', async (req, res) => {
   const { id } = req.params;
   const { name, url, is_active } = req.body;
 
   const updates: string[] = [];
-  const values: unknown[] = [];
+  const values: (string | number | null)[] = [];
 
   if (name !== undefined) {
     updates.push('name = ?');
@@ -773,17 +824,19 @@ app.patch('/api/sources/:id', (req, res) => {
   values.push(id);
 
   try {
-    const stmt = db.prepare(`UPDATE changelog_sources SET ${updates.join(', ')} WHERE id = ?`);
-    const result = stmt.run(...values);
+    const result = await db.execute({
+      sql: `UPDATE changelog_sources SET ${updates.join(', ')} WHERE id = ?`,
+      args: values,
+    });
 
-    if (result.changes === 0) {
+    if (result.rowsAffected === 0) {
       res.status(404).json({ error: 'Source not found' });
       return;
     }
 
     res.json({ success: true });
   } catch (error: unknown) {
-    if ((error as { code?: string }).code === 'SQLITE_CONSTRAINT_UNIQUE') {
+    if ((error as { code?: string }).code === 'SQLITE_CONSTRAINT') {
       res.status(409).json({ error: 'A source with this URL already exists' });
     } else {
       console.error('Failed to update source:', error);
@@ -792,18 +845,20 @@ app.patch('/api/sources/:id', (req, res) => {
   }
 });
 
-// Delete a source
-app.delete('/api/sources/:id', (req, res) => {
+app.delete('/api/sources/:id', async (req, res) => {
   const { id } = req.params;
 
-  // Delete associated history
-  db.prepare('DELETE FROM changelog_history WHERE source_id = ?').run(id);
+  await db.execute({
+    sql: 'DELETE FROM changelog_history WHERE source_id = ?',
+    args: [id],
+  });
 
-  // Delete source
-  const stmt = db.prepare('DELETE FROM changelog_sources WHERE id = ?');
-  const result = stmt.run(id);
+  const result = await db.execute({
+    sql: 'DELETE FROM changelog_sources WHERE id = ?',
+    args: [id],
+  });
 
-  if (result.changes === 0) {
+  if (result.rowsAffected === 0) {
     res.status(404).json({ error: 'Source not found' });
     return;
   }
@@ -811,19 +866,22 @@ app.delete('/api/sources/:id', (req, res) => {
   res.json({ success: true });
 });
 
-// Fetch changelog from a source (for preview)
 app.get('/api/sources/:id/changelog', async (req, res) => {
   const { id } = req.params;
-  const stmt = db.prepare('SELECT * FROM changelog_sources WHERE id = ?');
-  const source = stmt.get(id) as ChangelogSource | undefined;
+  const result = await db.execute({
+    sql: 'SELECT * FROM changelog_sources WHERE id = ?',
+    args: [id],
+  });
 
-  if (!source) {
+  if (result.rows.length === 0) {
     res.status(404).json({ error: 'Source not found' });
     return;
   }
 
+  const source = result.rows[0];
+
   try {
-    const markdown = await fetchChangelog(source.url);
+    const markdown = await fetchChangelog(source.url as string);
     res.json({ markdown, source });
   } catch (error) {
     console.error(`Failed to fetch changelog for ${source.name}:`, error);
@@ -831,7 +889,6 @@ app.get('/api/sources/:id/changelog', async (req, res) => {
   }
 });
 
-// Test a URL to see if it's a valid changelog
 app.post('/api/sources/test', async (req, res) => {
   const { url } = req.body;
 
@@ -872,7 +929,7 @@ app.post('/api/sources/test', async (req, res) => {
   }
 });
 
-// Chat endpoint - Gemini-powered changelog assistant
+// Chat endpoint
 app.post('/api/chat', async (req, res) => {
   if (!GEMINI_API_KEY) {
     res.status(500).json({ error: 'Gemini API key not configured' });
@@ -912,7 +969,7 @@ IMPORTANT FORMATTING RULES:
     ];
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -953,141 +1010,134 @@ IMPORTANT FORMATTING RULES:
 
 // ============ Chat Persistence Endpoints ============
 
-// Get all conversations
-app.get('/api/conversations', (_req, res) => {
-  const stmt = db.prepare(`
+app.get('/api/conversations', async (_req, res) => {
+  const result = await db.execute(`
     SELECT c.id, c.title, c.created_at, c.updated_at,
            (SELECT COUNT(*) FROM chat_messages WHERE conversation_id = c.id) as message_count
     FROM chat_conversations c
     ORDER BY c.updated_at DESC
   `);
-  const conversations = stmt.all();
-  res.json(conversations);
+  res.json(result.rows);
 });
 
-// Get a single conversation with messages
-app.get('/api/conversations/:id', (req, res) => {
+app.get('/api/conversations/:id', async (req, res) => {
   const { id } = req.params;
 
-  const convStmt = db.prepare('SELECT * FROM chat_conversations WHERE id = ?');
-  const conversation = convStmt.get(id);
+  const convResult = await db.execute({
+    sql: 'SELECT * FROM chat_conversations WHERE id = ?',
+    args: [id],
+  });
 
-  if (!conversation) {
+  if (convResult.rows.length === 0) {
     res.status(404).json({ error: 'Conversation not found' });
     return;
   }
 
-  const msgStmt = db.prepare('SELECT * FROM chat_messages WHERE conversation_id = ? ORDER BY created_at ASC');
-  const messages = msgStmt.all(id);
+  const msgResult = await db.execute({
+    sql: 'SELECT * FROM chat_messages WHERE conversation_id = ? ORDER BY created_at ASC',
+    args: [id],
+  });
 
-  res.json({ ...conversation, messages });
+  res.json({ ...convResult.rows[0], messages: msgResult.rows });
 });
 
-// Create a new conversation
-app.post('/api/conversations', (req, res) => {
+app.post('/api/conversations', async (req, res) => {
   const { title } = req.body;
   const id = `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-  const stmt = db.prepare('INSERT INTO chat_conversations (id, title) VALUES (?, ?)');
-  stmt.run(id, title || 'New Conversation');
+  await db.execute({
+    sql: 'INSERT INTO chat_conversations (id, title) VALUES (?, ?)',
+    args: [id, title || 'New Conversation'],
+  });
 
   res.json({ id, title: title || 'New Conversation' });
 });
 
-// Update conversation title
-app.patch('/api/conversations/:id', (req, res) => {
+app.patch('/api/conversations/:id', async (req, res) => {
   const { id } = req.params;
   const { title } = req.body;
 
-  const stmt = db.prepare('UPDATE chat_conversations SET title = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
-  stmt.run(title, id);
+  await db.execute({
+    sql: 'UPDATE chat_conversations SET title = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+    args: [title, id],
+  });
 
   res.json({ success: true });
 });
 
-// Delete a conversation
-app.delete('/api/conversations/:id', (req, res) => {
+app.delete('/api/conversations/:id', async (req, res) => {
   const { id } = req.params;
 
-  db.prepare('DELETE FROM chat_messages WHERE conversation_id = ?').run(id);
-  db.prepare('DELETE FROM chat_conversations WHERE id = ?').run(id);
+  await db.execute({
+    sql: 'DELETE FROM chat_messages WHERE conversation_id = ?',
+    args: [id],
+  });
+  await db.execute({
+    sql: 'DELETE FROM chat_conversations WHERE id = ?',
+    args: [id],
+  });
 
   res.json({ success: true });
 });
 
-// Add message to conversation
-app.post('/api/conversations/:id/messages', (req, res) => {
+app.post('/api/conversations/:id/messages', async (req, res) => {
   const { id: conversationId } = req.params;
   const { role, content, selectedVersions } = req.body;
 
   const msgId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-  const stmt = db.prepare(`
-    INSERT INTO chat_messages (id, conversation_id, role, content, selected_versions)
-    VALUES (?, ?, ?, ?, ?)
-  `);
-  stmt.run(msgId, conversationId, role, content, JSON.stringify(selectedVersions || []));
+  await db.execute({
+    sql: 'INSERT INTO chat_messages (id, conversation_id, role, content, selected_versions) VALUES (?, ?, ?, ?, ?)',
+    args: [msgId, conversationId, role, content, JSON.stringify(selectedVersions || [])],
+  });
 
-  // Update conversation timestamp
-  db.prepare('UPDATE chat_conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(conversationId);
+  await db.execute({
+    sql: 'UPDATE chat_conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+    args: [conversationId],
+  });
 
   res.json({ id: msgId, role, content });
 });
 
 // ============ Analysis Cache Endpoints ============
 
-// Get cached analysis for a version
-app.get('/api/analysis/:version', (req, res) => {
+app.get('/api/analysis/:version', async (req, res) => {
   const { version } = req.params;
 
-  const stmt = db.prepare('SELECT analysis_json, created_at FROM analysis_cache WHERE version = ?');
-  const row = stmt.get(version) as { analysis_json: string; created_at: string } | undefined;
+  const result = await db.execute({
+    sql: 'SELECT analysis_json, created_at FROM analysis_cache WHERE version = ?',
+    args: [version],
+  });
 
-  if (row) {
-    res.json({ analysis: JSON.parse(row.analysis_json), cached: true, cachedAt: row.created_at });
+  if (result.rows.length > 0) {
+    res.json({
+      analysis: JSON.parse(result.rows[0].analysis_json as string),
+      cached: true,
+      cachedAt: result.rows[0].created_at,
+    });
   } else {
     res.status(404).json({ error: 'Analysis not cached' });
   }
 });
 
-// Save analysis to cache
-app.post('/api/analysis/:version', (req, res) => {
+app.post('/api/analysis/:version', async (req, res) => {
   const { version } = req.params;
   const { analysis } = req.body;
 
-  const stmt = db.prepare(`
-    INSERT OR REPLACE INTO analysis_cache (version, analysis_json, created_at)
-    VALUES (?, ?, CURRENT_TIMESTAMP)
-  `);
-  stmt.run(version, JSON.stringify(analysis));
+  await db.execute({
+    sql: 'INSERT OR REPLACE INTO analysis_cache (version, analysis_json, created_at) VALUES (?, ?, CURRENT_TIMESTAMP)',
+    args: [version, JSON.stringify(analysis)],
+  });
 
   res.json({ success: true });
 });
 
-// Get all cached analyses
-app.get('/api/analysis', (_req, res) => {
-  const stmt = db.prepare('SELECT version, created_at FROM analysis_cache ORDER BY created_at DESC');
-  const analyses = stmt.all();
-  res.json(analyses);
+app.get('/api/analysis', async (_req, res) => {
+  const result = await db.execute('SELECT version, created_at FROM analysis_cache ORDER BY created_at DESC');
+  res.json(result.rows);
 });
 
 // Email endpoint
-interface ChangelogEmailRequest {
-  version: string;
-  tldr: string;
-  categories: {
-    critical_breaking_changes: string[];
-    removals: { feature: string; severity: string; why: string }[];
-    major_features: string[];
-    important_fixes: string[];
-    new_slash_commands: string[];
-    terminal_improvements: string[];
-    api_changes: string[];
-  };
-  action_items: string[];
-  sentiment: string;
-}
-
 function generateEmailHtml(data: ChangelogEmailRequest): string {
   const { version, tldr, categories, action_items, sentiment } = data;
 
@@ -1247,18 +1297,30 @@ app.use((_req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-  console.log(`Database: ${dbPath}`);
+async function start() {
+  await initDatabase();
+
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Database: Turso (${process.env.TURSO_DATABASE_URL ? 'remote' : 'local'})`);
+  });
 
   // Initialize monitoring from saved settings
-  const enabledRow = db.prepare('SELECT value FROM settings WHERE key = ?').get('emailNotificationsEnabled') as { value: string } | undefined;
-  const intervalRow = db.prepare('SELECT value FROM settings WHERE key = ?').get('notificationCheckInterval') as { value: string } | undefined;
+  const enabledResult = await db.execute({
+    sql: 'SELECT value FROM settings WHERE key = ?',
+    args: ['emailNotificationsEnabled'],
+  });
+  const intervalResult = await db.execute({
+    sql: 'SELECT value FROM settings WHERE key = ?',
+    args: ['notificationCheckInterval'],
+  });
 
-  const enabled = enabledRow?.value === 'true';
-  const interval = parseInt(intervalRow?.value || '0') || 0;
+  const enabled = enabledResult.rows[0]?.value === 'true';
+  const interval = parseInt((intervalResult.rows[0]?.value as string) || '0') || 0;
 
   if (enabled && interval > 0) {
     startMonitoring(interval);
   }
-});
+}
+
+start().catch(console.error);
