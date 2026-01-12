@@ -11,11 +11,12 @@ Track changelogs from any source, get AI-powered summaries, listen to audio brie
 Changelog Master monitors software changelogs (like Claude Code, VS Code, or any project with a markdown changelog) and transforms them into actionable insights:
 
 1. **Fetches** raw changelog markdown from any URL
-2. **Parses** version history into structured data
-3. **Analyzes** changes using Gemini 3 Flash AI to extract what actually matters
-4. **Generates** audio summaries using Gemini TTS so you can listen on the go
-5. **Notifies** you via email with audio attachments when new versions are released
-6. **Chats** with you about any changelog using an AI-powered assistant
+2. **Parses** version history into structured data (supports multiple formats)
+3. **Enriches** with release dates from GitHub Releases API when not in changelog
+4. **Analyzes** changes using Gemini 3 Flash AI to extract what actually matters
+5. **Generates** audio summaries using Gemini TTS so you can listen on the go
+6. **Notifies** you via email with audio attachments when new versions are released
+7. **Chats** with you about any changelog using an AI-powered assistant
 
 ---
 
@@ -27,8 +28,31 @@ Track multiple changelog sources simultaneously. Switch between them instantly o
 ```
 Claude Code ─────┐
 VS Code ─────────┼──► Changelog Master ──► Unified Dashboard
-Antigravity IDE ─┘
+n8n ─────────────┘
 ```
+
+### Smart Changelog Parsing
+Automatically detects and parses multiple changelog formats:
+
+| Format | Example | Source |
+|--------|---------|--------|
+| `## version` | `## 2.1.4` | Claude Code, VS Code |
+| `# [version](url)` | `# [2.3.0](https://github.com/...)` | n8n |
+| With date | `## 1.0.0 - 2024-01-15` | Keep a Changelog |
+| Date in parens | `# [2.3.0](url) (2026-01-05)` | n8n |
+
+### GitHub Releases Integration
+When changelog files don't include release dates (like Claude Code), the app automatically fetches dates from GitHub Releases API:
+
+```
+Changelog without dates  ──► GitHub Releases API  ──► Enriched with dates
+     ## 2.1.4                    v2.1.4: 2025-01-10        ## 2.1.4 (2025-01-10)
+     ## 2.1.3                    v2.1.3: 2025-01-08        ## 2.1.3 (2025-01-08)
+```
+
+**Supported URL patterns:**
+- `https://raw.githubusercontent.com/{owner}/{repo}/...`
+- `https://github.com/{owner}/{repo}/...`
 
 ### AI-Powered Analysis
 Gemini 3 Flash analyzes each changelog and extracts:
@@ -108,7 +132,7 @@ Ask questions about any changelog versions using the AI assistant:
               ┌───────────────────┼───────────────────┐
               ▼                   ▼                   ▼
       ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
-      │   SQLite     │   │  Gemini API  │   │  Resend API  │
+      │ Turso/LibSQL │   │  Gemini API  │   │  Resend API  │
       │  (Caching)   │   │   (AI/TTS)   │   │   (Email)    │
       └──────────────┘   └──────────────┘   └──────────────┘
 ```
@@ -122,11 +146,12 @@ Ask questions about any changelog versions using the AI assistant:
 | Frontend | React 19 + TypeScript + Vite |
 | Styling | Tailwind CSS 4 (Anthropic-inspired design) |
 | Backend | Express.js + TypeScript |
-| Database | SQLite (better-sqlite3) |
-| AI Analysis | Gemini 3 Flash (`gemini-3-flash-preview`) |
+| Database | Turso/LibSQL (SQLite-compatible edge database) |
+| AI Analysis | Gemini 2.0 Flash (`gemini-2.0-flash`) |
 | Text-to-Speech | Gemini 2.5 Flash TTS (`gemini-2.5-flash-preview-tts`) |
 | Email | Resend API |
 | Scheduling | node-cron |
+| i18n | react-i18next (polski, angielski) |
 
 ---
 
@@ -165,9 +190,15 @@ VITE_GEMINI_API_KEY=your-gemini-api-key
 RESEND_API_KEY=re_xxxxxxxxxxxx
 NOTIFY_EMAIL=you@example.com
 
+# Optional - Database (Turso)
+# Zostaw puste dla lokalnego rozwoju (użyje local.db)
+TURSO_DATABASE_URL=libsql://your-database.turso.io
+TURSO_AUTH_TOKEN=your-turso-auth-token
+
 # Optional - Customize defaults
 VITE_CHANGELOG_CACHE_DURATION=3600000
 VITE_VOICE_PREFERENCE=Charon
+PORT=3001
 ```
 
 ### Running
@@ -196,19 +227,26 @@ npm run dev:server # Backend on http://localhost:3001
    - `BACKEND_URL` - URL of your backend server (e.g., `https://your-app.railway.app`)
 4. Deploy
 
-### Backend (Railway)
+### Backend (Railway + Turso)
 
-The backend uses SQLite and requires a persistent server. Deploy to [Railway](https://railway.app):
+Backend używa Turso jako bazy danych edge. Deploy na [Railway](https://railway.app):
 
-1. Create new project from GitHub repo
-2. Set root directory to `/`
-3. Set start command: `npm run dev:server`
-4. Add environment variables:
-   - `VITE_GEMINI_API_KEY` - Your Gemini API key
-   - `RESEND_API_KEY` - Your Resend API key
-   - `NOTIFY_EMAIL` - Email for notifications
-5. Deploy and copy the public URL
-6. Add this URL as `BACKEND_URL` in Vercel
+1. Utwórz bazę danych na [Turso](https://turso.tech):
+   ```bash
+   turso db create changelog-master
+   turso db tokens create changelog-master
+   ```
+2. Utwórz nowy projekt z repozytorium GitHub
+3. Ustaw katalog główny na `/`
+4. Ustaw komendę startową: `npm start`
+5. Dodaj zmienne środowiskowe:
+   - `VITE_GEMINI_API_KEY` - Klucz API Gemini
+   - `RESEND_API_KEY` - Klucz API Resend
+   - `NOTIFY_EMAIL` - Email do powiadomień
+   - `TURSO_DATABASE_URL` - URL bazy Turso
+   - `TURSO_AUTH_TOKEN` - Token autoryzacji Turso
+6. Wdróż i skopiuj publiczny URL
+7. Dodaj ten URL jako `BACKEND_URL` w Vercel
 
 ### Alternative: Single Server Deployment
 
@@ -234,8 +272,11 @@ The backend serves the static frontend from `dist/` folder.
 
 **Example URLs:**
 ```
-# Claude Code
+# Claude Code (dates from GitHub Releases)
 https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md
+
+# n8n (dates in changelog)
+https://raw.githubusercontent.com/n8n-io/n8n/master/CHANGELOG.md
 
 # VS Code
 https://raw.githubusercontent.com/microsoft/vscode/main/CHANGELOG.md
@@ -243,6 +284,8 @@ https://raw.githubusercontent.com/microsoft/vscode/main/CHANGELOG.md
 # Any GitHub project
 https://raw.githubusercontent.com/{owner}/{repo}/main/CHANGELOG.md
 ```
+
+> **Note:** For GitHub-hosted changelogs without dates, release dates are automatically fetched from the GitHub Releases API.
 
 ### Switching Between Sources
 
@@ -293,8 +336,20 @@ When you have multiple sources:
 | POST | `/api/sources` | Add new source |
 | PATCH | `/api/sources/:id` | Update source (name, URL, active) |
 | DELETE | `/api/sources/:id` | Delete source and history |
-| GET | `/api/sources/:id/changelog` | Fetch changelog markdown |
+| GET | `/api/sources/:id/changelog` | Fetch changelog markdown + release dates from GitHub |
 | POST | `/api/sources/test` | Test if URL is valid changelog |
+
+**Response format for `/api/sources/:id/changelog`:**
+```json
+{
+  "markdown": "# Changelog\n\n## 2.1.4\n...",
+  "source": { "id": "...", "name": "Claude Code", "url": "..." },
+  "releaseDates": {
+    "2.1.4": "2025-01-10",
+    "2.1.3": "2025-01-08"
+  }
+}
+```
 
 ### Analysis
 
@@ -333,6 +388,8 @@ When you have multiple sources:
 
 ## Database Schema
 
+Baza danych używa Turso/LibSQL (SQLite-compatible). Lokalnie tworzy plik `local.db`.
+
 ```sql
 -- Changelog sources to monitor
 CREATE TABLE changelog_sources (
@@ -365,7 +422,7 @@ CREATE TABLE audio_cache (
   id TEXT PRIMARY KEY,
   text_hash TEXT NOT NULL,
   voice TEXT NOT NULL,
-  audio_data BLOB NOT NULL,
+  audio_data TEXT NOT NULL,  -- base64 encoded
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -455,8 +512,7 @@ changelog-master/
 │   ├── claude-changelog-app.md  # Original spec
 │   ├── gemini-3.md              # Gemini API reference
 │   └── audio_understanding.md   # TTS documentation
-├── data/
-│   └── audio.db              # SQLite database (gitignored)
+├── local.db                  # Lokalna baza danych Turso/LibSQL (gitignored)
 └── .env                      # API keys (gitignored)
 ```
 
@@ -504,6 +560,17 @@ The HTML email is generated in `generateEmailHtml()` in `server/index.ts`.
 ### "Failed to fetch changelog"
 - Check if the URL returns raw markdown (not HTML)
 - Use the **Test** button in Sources panel to validate
+
+### "No dates showing for versions"
+- Dates are extracted from changelog format (e.g., `## 1.0.0 - 2024-01-15` or `# [1.0.0](url) (2024-01-15)`)
+- If changelog doesn't include dates, they're fetched from GitHub Releases API
+- GitHub API has rate limits (60 requests/hour for unauthenticated) - dates may not load if limit exceeded
+- Non-GitHub sources without dates in changelog will show empty dates
+
+### "Changelog not parsing correctly"
+- Supported formats: `## version`, `# [version]`, `# [version](url)`
+- Version must be semver format: `X.Y.Z` or `X.Y.Z-prerelease`
+- Items must start with `- ` or `* `
 
 ### "Analysis failed"
 - Verify your Gemini API key is correct
