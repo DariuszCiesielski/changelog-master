@@ -205,6 +205,62 @@ async function fetchChangelog(url: string): Promise<string> {
   return response.text();
 }
 
+// Extract GitHub owner/repo from raw.githubusercontent.com URL
+function extractGitHubRepo(url: string): { owner: string; repo: string } | null {
+  // Match: https://raw.githubusercontent.com/owner/repo/...
+  const match = url.match(/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)/);
+  if (match) {
+    return { owner: match[1], repo: match[2] };
+  }
+  // Match: https://github.com/owner/repo/...
+  const githubMatch = url.match(/github\.com\/([^/]+)\/([^/]+)/);
+  if (githubMatch) {
+    return { owner: githubMatch[1], repo: githubMatch[2] };
+  }
+  return null;
+}
+
+// Fetch release dates from GitHub Releases API
+async function fetchGitHubReleaseDates(owner: string, repo: string): Promise<Map<string, string>> {
+  const dates = new Map<string, string>();
+
+  try {
+    // Fetch up to 100 releases (should cover most use cases)
+    const response = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/releases?per_page=100`,
+      {
+        headers: {
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'ChangelogTracker/1.0',
+        },
+      }
+    );
+
+    if (!response.ok) {
+      console.log(`[GitHub] Failed to fetch releases for ${owner}/${repo}: ${response.status}`);
+      return dates;
+    }
+
+    const releases = await response.json();
+
+    for (const release of releases) {
+      // Extract version from tag_name (remove 'v' prefix if present)
+      const version = release.tag_name.replace(/^v/, '');
+      // Get date in YYYY-MM-DD format
+      const date = release.published_at?.split('T')[0] || '';
+      if (version && date) {
+        dates.set(version, date);
+      }
+    }
+
+    console.log(`[GitHub] Fetched ${dates.size} release dates for ${owner}/${repo}`);
+  } catch (error) {
+    console.error(`[GitHub] Error fetching releases for ${owner}/${repo}:`, error);
+  }
+
+  return dates;
+}
+
 function parseLatestVersion(markdown: string): { version: string; content: string; date: string } | null {
   const lines = markdown.split('\n');
   let version = '';
@@ -898,7 +954,16 @@ app.get('/api/sources/:id/changelog', async (req, res) => {
 
   try {
     const markdown = await fetchChangelog(source.url as string);
-    res.json({ markdown, source });
+
+    // Try to fetch release dates from GitHub if URL is from GitHub
+    let releaseDates: Record<string, string> = {};
+    const repoInfo = extractGitHubRepo(source.url as string);
+    if (repoInfo) {
+      const dates = await fetchGitHubReleaseDates(repoInfo.owner, repoInfo.repo);
+      releaseDates = Object.fromEntries(dates);
+    }
+
+    res.json({ markdown, source, releaseDates });
   } catch (error) {
     console.error(`Failed to fetch changelog for ${source.name}:`, error);
     res.status(500).json({ error: 'Failed to fetch changelog' });

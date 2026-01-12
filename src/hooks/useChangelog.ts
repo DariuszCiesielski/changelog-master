@@ -54,6 +54,7 @@ export function useChangelog(): UseChangelogReturn {
       let markdown: string;
       let sourceId: string | undefined;
       let sourceName: string | undefined;
+      let releaseDates: Record<string, string> | undefined;
 
       if (selectedSourceId) {
         // Fetch from specific source
@@ -61,6 +62,7 @@ export function useChangelog(): UseChangelogReturn {
         markdown = result.markdown;
         sourceId = result.source.id;
         sourceName = result.source.name;
+        releaseDates = result.releaseDates;
       } else {
         // Fetch from default URL
         markdown = await fetchChangelog();
@@ -69,7 +71,7 @@ export function useChangelog(): UseChangelogReturn {
 
       setRawChangelog(markdown);
 
-      const versions = parseChangelog(markdown, sourceId, sourceName);
+      const versions = parseChangelog(markdown, sourceId, sourceName, releaseDates);
       setParsedChangelog(versions);
       setLastFetched(Date.now());
 

@@ -42,7 +42,11 @@ export async function fetchChangelog(): Promise<string> {
 }
 
 // Fetch changelog from a specific source
-export async function fetchChangelogFromSource(sourceId: string): Promise<{ markdown: string; source: ChangelogSource }> {
+export async function fetchChangelogFromSource(sourceId: string): Promise<{
+  markdown: string;
+  source: ChangelogSource;
+  releaseDates?: Record<string, string>;
+}> {
   const response = await fetch(`/api/sources/${sourceId}/changelog`);
   if (!response.ok) throw new Error('Failed to fetch changelog from source');
   return response.json();
@@ -80,7 +84,8 @@ export async function fetchAllActiveChangelogs(): Promise<{ sourceId: string; so
 export function parseChangelog(
   markdown: string,
   sourceId?: string,
-  sourceName?: string
+  sourceName?: string,
+  releaseDates?: Record<string, string>
 ): ChangelogVersion[] {
   const versions: ChangelogVersion[] = [];
   const lines = markdown.split('\n');
@@ -96,9 +101,12 @@ export function parseChangelog(
         versions.push(currentVersion);
       }
 
+      const versionNumber = versionMatch[1];
+
       // Extract date - try multiple formats:
       // 1. n8n format: # [2.3.0](url) (2026-01-05) - date in parentheses at the end
       // 2. Claude format: ## 1.0.50 - 2024-01-12 - date after dash
+      // 3. GitHub Releases API (fallback)
       let date = '';
       const dateInParensMatch = line.match(/\((\d{4}-\d{2}-\d{2})\)\s*$/);
       if (dateInParensMatch) {
@@ -110,8 +118,13 @@ export function parseChangelog(
         }
       }
 
+      // If no date found in changelog, try GitHub Releases
+      if (!date && releaseDates) {
+        date = releaseDates[versionNumber] || '';
+      }
+
       currentVersion = {
-        version: versionMatch[1],
+        version: versionNumber,
         date,
         items: [],
         sourceId,
