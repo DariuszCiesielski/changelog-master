@@ -1,0 +1,192 @@
+{
+  "header": {
+    "changelog": "Lista zmian",
+    "updated": "Zaktualizowano",
+    "refresh": "Odśwież",
+    "darkMode": "Tryb ciemny",
+    "lightMode": "Tryb jasny",
+    "sendToEmail": "Wyślij na email",
+    "switchSource": "Zmień źródło changelogu"
+  },
+  "tabs": {
+    "changelog": "Lista zmian",
+    "whatMatters": "Co ważne"
+  },
+  "changelogView": {
+    "noData": "Brak danych changelogu",
+    "changes": "zmian",
+    "stopAudio": "Zatrzymaj audio",
+    "listenToRelease": "Posłuchaj tej wersji",
+    "copyToClipboard": "Kopiuj do schowka",
+    "version": "Wersja {{version}}",
+    "released": "wydana {{date}}",
+    "generateAudio": "Generuj audio dla tej wersji",
+    "stop": "Stop",
+    "types": {
+      "feature": "Nowa funkcja",
+      "fix": "Poprawka błędu",
+      "removal": "Usunięcie",
+      "breaking": "Zmiana łamiąca zgodność",
+      "other": "Aktualizacja"
+    }
+  },
+  "mattersView": {
+    "analyzing": "Analizowanie changelogu przez AI...",
+    "notAvailable": "Analiza niedostępna. Sprawdź konfigurację klucza API Gemini.",
+    "hereIsWhatMatters": "Oto co jest ważne w najnowszym wydaniu Claude Code",
+    "currentAnalysis": "Bieżąca analiza",
+    "latest": "Najnowsza",
+    "backToCurrent": "Powrót do bieżącej",
+    "viewingArchived": "Przeglądasz zarchiwizowaną analizę: {{version}}",
+    "tldr": "W skrócie",
+    "listenToFullSummary": "Posłuchaj całego podsumowania",
+    "stop": "Stop",
+    "listen": "Słuchaj",
+    "sections": {
+      "criticalBreakingChanges": "Krytyczne zmiany łamiące zgodność",
+      "removals": "Usunięcia",
+      "majorFeatures": "Główne funkcje",
+      "importantFixes": "Ważne poprawki",
+      "newSlashCommands": "Nowe komendy slash",
+      "terminalImprovements": "Ulepszenia terminala",
+      "apiChanges": "Zmiany API",
+      "actionItems": "Do zrobienia"
+    },
+    "severity": {
+      "critical": "krytyczny",
+      "high": "wysoki",
+      "medium": "średni",
+      "low": "niski"
+    }
+  },
+  "settings": {
+    "title": "Ustawienia",
+    "close": "Zamknij ustawienia",
+    "appearance": "Wygląd",
+    "useDarkModeDefault": "Używaj trybu ciemnego domyślnie",
+    "autoRefreshInterval": "Interwał automatycznego odświeżania (UI)",
+    "emailNotifications": "Powiadomienia email",
+    "notifyNewVersion": "Powiadom mnie gdy nowa wersja zostanie wydana",
+    "sendOnEveryCheck": "Wysyłaj email przy każdym sprawdzeniu",
+    "evenWhenNoNewVersion": "Nawet gdy nie ma nowej wersji",
+    "checkForNewVersions": "Sprawdzaj nowe wersje",
+    "audioVoiceForEmail": "Głos audio dla załącznika email",
+    "cronStatus": "Status crona:",
+    "running": "Działa",
+    "stopped": "Zatrzymany",
+    "schedule": "Harmonogram:",
+    "lastKnownVersion": "Ostatnia znana wersja:",
+    "checking": "Sprawdzanie...",
+    "checkComplete": "Sprawdzenie zakończone",
+    "checkForNewVersionNow": "Sprawdź teraz nową wersję",
+    "generatingSending": "Generowanie i wysyłanie...",
+    "emailSent": "Email wysłany!",
+    "failedToSend": "Nie udało się wysłać",
+    "sendDemoEmail": "Wyślij demo email z audio",
+    "infoText": "Gdy zostanie wykryta nowa wersja changelogu, otrzymasz email z podsumowaniem wygenerowanym przez AI oraz załącznikiem audio.",
+    "intervals": {
+      "manualOnly": "Tylko ręcznie",
+      "oneMinute": "1 minuta",
+      "fiveMinutes": "5 minut",
+      "fifteenMinutes": "15 minut",
+      "thirtyMinutes": "30 minut",
+      "oneHour": "1 godzina",
+      "twoHours": "2 godziny",
+      "sixHours": "6 godzin",
+      "twentyFourHours": "24 godziny",
+      "oneWeek": "1 tydzień",
+      "twoWeeks": "2 tygodnie"
+    },
+    "notificationIntervals": {
+      "disabled": "Wyłączone",
+      "everyFiveMinutes": "Co 5 minut",
+      "everyFifteenMinutes": "Co 15 minut",
+      "everyThirtyMinutes": "Co 30 minut",
+      "everyHour": "Co godzinę",
+      "everySixHours": "Co 6 godzin",
+      "everyTwelveHours": "Co 12 godzin",
+      "onceADay": "Raz dziennie",
+      "onceAWeek": "Raz w tygodniu",
+      "everyTwoWeeks": "Co dwa tygodnie"
+    }
+  },
+  "sources": {
+    "title": "Źródła changelogów",
+    "close": "Zamknij",
+    "active": "Aktywne",
+    "lastVersion": "Ostatnia wersja:",
+    "disableSource": "Wyłącz źródło",
+    "enableSource": "Włącz źródło",
+    "editSource": "Edytuj źródło",
+    "deleteSource": "Usuń źródło",
+    "noSourcesConfigured": "Brak skonfigurowanych źródeł changelogów",
+    "addNewSource": "Dodaj nowe źródło",
+    "name": "Nazwa",
+    "sourceName": "Nazwa źródła",
+    "namePlaceholder": "np. Antigravity IDE",
+    "changelogUrl": "URL changelogu",
+    "urlPlaceholder": "https://raw.githubusercontent.com/...",
+    "test": "Testuj",
+    "testing": "Testowanie...",
+    "save": "Zapisz",
+    "cancel": "Anuluj",
+    "addSource": "Dodaj źródło",
+    "adding": "Dodawanie...",
+    "addChangelogSource": "Dodaj źródło changelogu",
+    "validChangelog": "Wykryto poprawny changelog!",
+    "latestVersion": "Najnowsza wersja:",
+    "previewContent": "Podgląd zawartości",
+    "infoText": "Dodaj wiele źródeł changelogów do monitorowania. Każde źródło powinno być URL-em do surowego pliku markdown (np. z GitHub raw content). Aktywne źródła będą sprawdzane pod kątem nowych wersji zgodnie z ustawieniami powiadomień.",
+    "confirmDelete": "Czy na pewno chcesz usunąć to źródło? Cała historia wersji dla tego źródła zostanie usunięta.",
+    "nameUrlRequired": "Nazwa i URL są wymagane"
+  },
+  "audioPlayer": {
+    "clickToGenerate": "Kliknij ikonę głośnika aby wygenerować audio",
+    "nowPlaying": "Teraz odtwarzane:",
+    "play": "Odtwarzaj",
+    "pause": "Pauza",
+    "seekAudio": "Przewiń audio",
+    "downloadAudio": "Pobierz audio"
+  },
+  "chat": {
+    "title": "Asystent Changelogu",
+    "newChat": "Nowy czat",
+    "noConversationsYet": "Brak rozmów",
+    "messages": "wiadomości",
+    "selectReleases": "Wybierz wydania",
+    "tagVersionsAsContext": "Oznacz wersje jako kontekst",
+    "all": "Wszystkie",
+    "clear": "Wyczyść",
+    "selected": "wybranych",
+    "chatHistory": "Historia czatu",
+    "askAboutChangelogs": "Zadawaj pytania o changelogi Claude Code",
+    "selectVersionsForContext": "Wybierz wersje po lewej aby dodać je jako kontekst",
+    "suggestions": {
+      "breakingChanges": "Jakie zmiany łamiące zgodność powinienem znać?",
+      "newFeatures": "Podsumuj nowe funkcje",
+      "bugsFixes": "Jakie błędy zostały ostatnio naprawione?"
+    },
+    "tipSelectVersions": "Wskazówka: Wybierz wersje aby dać asystentowi więcej kontekstu",
+    "askAboutChangelog": "Zapytaj o changelog...",
+    "errorMessage": "Przepraszam, wystąpił błąd. Spróbuj ponownie."
+  },
+  "toast": {
+    "changelogSent": "Changelog wysłany na Twój email!",
+    "failedToSendEmail": "Nie udało się wysłać emaila. Spróbuj ponownie.",
+    "analysisNotAvailable": "Analiza jeszcze niedostępna",
+    "closeNotification": "Zamknij powiadomienie"
+  },
+  "errors": {
+    "loadingChangelog": "Błąd ładowania changelogu",
+    "tryAgain": "Spróbuj ponownie"
+  },
+  "common": {
+    "openChat": "Otwórz czat changelogu",
+    "askAboutChangelogs": "Zapytaj o changelogi"
+  },
+  "language": {
+    "select": "Język",
+    "en": "English",
+    "pl": "Polski"
+  }
+}

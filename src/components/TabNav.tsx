@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 interface TabNavProps {
   activeTab: 'changelog' | 'matters';
   onTabChange: (tab: 'changelog' | 'matters') => void;
@@ -5,6 +7,8 @@ interface TabNavProps {
 }
 
 export function TabNav({ activeTab, onTabChange, isAnalyzing }: TabNavProps) {
+  const { t } = useTranslation();
+
   return (
     <nav className="border-b border-cream-300 dark:border-charcoal-500 bg-white dark:bg-charcoal-800 transition-colors duration-500">
       <div className="max-w-6xl mx-auto px-4">
@@ -19,7 +23,7 @@ export function TabNav({ activeTab, onTabChange, isAnalyzing }: TabNavProps) {
             aria-selected={activeTab === 'changelog'}
             role="tab"
           >
-            Changelog
+            {t('tabs.changelog')}
           </button>
           <button
             onClick={() => onTabChange('matters')}
@@ -31,7 +35,7 @@ export function TabNav({ activeTab, onTabChange, isAnalyzing }: TabNavProps) {
             aria-selected={activeTab === 'matters'}
             role="tab"
           >
-            What Matters
+            {t('tabs.whatMatters')}
             {isAnalyzing && (
               <span className="w-2 h-2 bg-coral-500 rounded-full animate-pulse" />
             )}

@@ -872,7 +872,11 @@ app.post('/api/chat', async (req, res) => {
   }
 
   try {
-    const { message, context, history = [] } = req.body;
+    const { message, context, history = [], language = 'en' } = req.body;
+
+    const languageInstruction = language === 'pl'
+      ? '\n\nIMPORTANT: You MUST respond entirely in Polish language. All your responses must be in Polish.'
+      : '';
 
     const systemPrompt = `You are a helpful assistant that answers questions about Claude Code changelog releases.
 You have access to specific changelog versions that the user has selected.
@@ -882,7 +886,7 @@ Focus on practical implications for developers.
 
 IMPORTANT FORMATTING RULES:
 - NEVER use em dashes (—) or en dashes (–). Use regular hyphens (-) or colons (:) instead.
-- Keep responses clean and readable.`;
+- Keep responses clean and readable.${languageInstruction}`;
 
     const contextSection = context
       ? `\n\n## Selected Changelog Versions:\n${context}\n\n---\n`
@@ -1223,6 +1227,15 @@ app.post('/api/send-changelog', async (req, res) => {
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
+});
+
+// Serve static files in production
+const distPath = path.join(__dirname, '..', 'dist');
+app.use(express.static(distPath));
+
+// SPA fallback - serve index.html for all non-API routes
+app.get('*', (_req, res) => {
+  res.sendFile(path.join(distPath, 'index.html'));
 });
 
 // Start server

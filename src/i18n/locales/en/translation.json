@@ -1,0 +1,192 @@
+{
+  "header": {
+    "changelog": "Changelog",
+    "updated": "Updated",
+    "refresh": "Refresh",
+    "darkMode": "Dark mode",
+    "lightMode": "Light mode",
+    "sendToEmail": "Send to email",
+    "switchSource": "Switch changelog source"
+  },
+  "tabs": {
+    "changelog": "Changelog",
+    "whatMatters": "What Matters"
+  },
+  "changelogView": {
+    "noData": "No changelog data available",
+    "changes": "changes",
+    "stopAudio": "Stop audio",
+    "listenToRelease": "Listen to this release",
+    "copyToClipboard": "Copy to clipboard",
+    "version": "Version {{version}}",
+    "released": "released {{date}}",
+    "generateAudio": "Generate audio for this version",
+    "stop": "Stop",
+    "types": {
+      "feature": "New feature",
+      "fix": "Bug fix",
+      "removal": "Removal",
+      "breaking": "Breaking change",
+      "other": "Update"
+    }
+  },
+  "mattersView": {
+    "analyzing": "Analyzing changelog with AI...",
+    "notAvailable": "Analysis not available. Please check your Gemini API key configuration.",
+    "hereIsWhatMatters": "Here's what matters in the latest Claude Code release",
+    "currentAnalysis": "Current Analysis",
+    "latest": "Latest",
+    "backToCurrent": "Back to current",
+    "viewingArchived": "Viewing archived analysis: {{version}}",
+    "tldr": "TL;DR",
+    "listenToFullSummary": "Listen to Full Summary",
+    "stop": "Stop",
+    "listen": "Listen",
+    "sections": {
+      "criticalBreakingChanges": "Critical Breaking Changes",
+      "removals": "Removals",
+      "majorFeatures": "Major Features",
+      "importantFixes": "Important Fixes",
+      "newSlashCommands": "New Slash Commands",
+      "terminalImprovements": "Terminal Improvements",
+      "apiChanges": "API Changes",
+      "actionItems": "Action Items"
+    },
+    "severity": {
+      "critical": "critical",
+      "high": "high",
+      "medium": "medium",
+      "low": "low"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "close": "Close settings",
+    "appearance": "Appearance",
+    "useDarkModeDefault": "Use dark mode by default",
+    "autoRefreshInterval": "Auto-refresh interval (UI)",
+    "emailNotifications": "Email Notifications",
+    "notifyNewVersion": "Notify me when a new version is released",
+    "sendOnEveryCheck": "Send email on every check",
+    "evenWhenNoNewVersion": "Even when no new version is released",
+    "checkForNewVersions": "Check for new versions",
+    "audioVoiceForEmail": "Audio voice for email attachment",
+    "cronStatus": "Cron status:",
+    "running": "Running",
+    "stopped": "Stopped",
+    "schedule": "Schedule:",
+    "lastKnownVersion": "Last known version:",
+    "checking": "Checking...",
+    "checkComplete": "Check complete",
+    "checkForNewVersionNow": "Check for new version now",
+    "generatingSending": "Generating & Sending...",
+    "emailSent": "Email Sent!",
+    "failedToSend": "Failed to send",
+    "sendDemoEmail": "Send Demo Email with Audio",
+    "infoText": "When a new changelog version is detected, you'll receive an email with the AI-generated summary and an audio file attachment.",
+    "intervals": {
+      "manualOnly": "Manual only",
+      "oneMinute": "1 minute",
+      "fiveMinutes": "5 minutes",
+      "fifteenMinutes": "15 minutes",
+      "thirtyMinutes": "30 minutes",
+      "oneHour": "1 hour",
+      "twoHours": "2 hours",
+      "sixHours": "6 hours",
+      "twentyFourHours": "24 hours",
+      "oneWeek": "1 week",
+      "twoWeeks": "2 weeks"
+    },
+    "notificationIntervals": {
+      "disabled": "Disabled",
+      "everyFiveMinutes": "Every 5 minutes",
+      "everyFifteenMinutes": "Every 15 minutes",
+      "everyThirtyMinutes": "Every 30 minutes",
+      "everyHour": "Every hour",
+      "everySixHours": "Every 6 hours",
+      "everyTwelveHours": "Every 12 hours",
+      "onceADay": "Once a day",
+      "onceAWeek": "Once a week",
+      "everyTwoWeeks": "Every two weeks"
+    }
+  },
+  "sources": {
+    "title": "Changelog Sources",
+    "close": "Close",
+    "active": "Active",
+    "lastVersion": "Last version:",
+    "disableSource": "Disable source",
+    "enableSource": "Enable source",
+    "editSource": "Edit source",
+    "deleteSource": "Delete source",
+    "noSourcesConfigured": "No changelog sources configured",
+    "addNewSource": "Add New Source",
+    "name": "Name",
+    "sourceName": "Source name",
+    "namePlaceholder": "e.g., Antigravity IDE",
+    "changelogUrl": "Changelog URL",
+    "urlPlaceholder": "https://raw.githubusercontent.com/...",
+    "test": "Test",
+    "testing": "Testing...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "addSource": "Add Source",
+    "adding": "Adding...",
+    "addChangelogSource": "Add Changelog Source",
+    "validChangelog": "Valid changelog detected!",
+    "latestVersion": "Latest version:",
+    "previewContent": "Preview content",
+    "infoText": "Add multiple changelog sources to monitor. Each source should be a raw markdown file URL (e.g., from GitHub raw content). Active sources will be checked for new versions based on your notification settings.",
+    "confirmDelete": "Are you sure you want to delete this source? All version history for this source will be removed.",
+    "nameUrlRequired": "Name and URL are required"
+  },
+  "audioPlayer": {
+    "clickToGenerate": "Click a speaker icon to generate audio",
+    "nowPlaying": "Now playing:",
+    "play": "Play",
+    "pause": "Pause",
+    "seekAudio": "Seek audio",
+    "downloadAudio": "Download audio"
+  },
+  "chat": {
+    "title": "Changelog Assistant",
+    "newChat": "New Chat",
+    "noConversationsYet": "No conversations yet",
+    "messages": "messages",
+    "selectReleases": "Select Releases",
+    "tagVersionsAsContext": "Tag versions as context",
+    "all": "All",
+    "clear": "Clear",
+    "selected": "selected",
+    "chatHistory": "Chat history",
+    "askAboutChangelogs": "Ask questions about Claude Code changelogs",
+    "selectVersionsForContext": "Select versions on the left to include them as context",
+    "suggestions": {
+      "breakingChanges": "What breaking changes should I know about?",
+      "newFeatures": "Summarize the new features",
+      "bugsFixes": "What bugs were fixed recently?"
+    },
+    "tipSelectVersions": "Tip: Select versions to give the assistant more context",
+    "askAboutChangelog": "Ask about the changelog...",
+    "errorMessage": "Sorry, I encountered an error. Please try again."
+  },
+  "toast": {
+    "changelogSent": "Changelog sent to your email!",
+    "failedToSendEmail": "Failed to send email. Please try again.",
+    "analysisNotAvailable": "Analysis not available yet",
+    "closeNotification": "Close notification"
+  },
+  "errors": {
+    "loadingChangelog": "Error loading changelog",
+    "tryAgain": "Try Again"
+  },
+  "common": {
+    "openChat": "Open changelog chat",
+    "askAboutChangelogs": "Ask about changelogs"
+  },
+  "language": {
+    "select": "Language",
+    "en": "English",
+    "pl": "Polski"
+  }
+}

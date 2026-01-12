@@ -1,4 +1,5 @@
 import { Play, Pause, Download, Volume2, Gauge } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { VoiceName } from '../types';
 import { VOICE_OPTIONS } from '../types';
 
@@ -35,6 +36,8 @@ export function AudioPlayer({
   onSeek,
   onDownload,
 }: AudioPlayerProps) {
+  const { t } = useTranslation();
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
@@ -69,7 +72,7 @@ export function AudioPlayer({
               ))}
             </select>
             <span className="text-sm text-charcoal-500 dark:text-charcoal-400">
-              Click a speaker icon to generate audio
+              {t('audioPlayer.clickToGenerate')}
             </span>
           </div>
         </div>
@@ -84,7 +87,7 @@ export function AudioPlayer({
           {/* Now Playing Label */}
           {playingLabel && (
             <div className="text-center text-sm text-charcoal-500 dark:text-charcoal-400">
-              Now playing: <span className="font-medium text-coral-600 dark:text-coral-400">{playingLabel}</span>
+              {t('audioPlayer.nowPlaying')} <span className="font-medium text-coral-600 dark:text-coral-400">{playingLabel}</span>
             </div>
           )}
 
@@ -126,7 +129,7 @@ export function AudioPlayer({
               <button
                 onClick={isPlaying ? onPause : onPlay}
                 className="p-3 bg-teal-500 hover:bg-teal-600 text-white rounded-full transition-all shadow-md hover:shadow-lg flex-shrink-0"
-                aria-label={isPlaying ? 'Pause' : 'Play'}
+                aria-label={isPlaying ? t('audioPlayer.pause') : t('audioPlayer.play')}
               >
                 {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
               </button>
@@ -137,7 +140,7 @@ export function AudioPlayer({
                   className="flex-1 h-2 bg-cream-200 dark:bg-charcoal-600 rounded-full overflow-hidden min-w-[60px] cursor-pointer hover:h-3 transition-all"
                   onClick={handleProgressClick}
                   role="slider"
-                  aria-label="Seek audio"
+                  aria-label={t('audioPlayer.seekAudio')}
                   aria-valuenow={currentTime}
                   aria-valuemin={0}
                   aria-valuemax={duration}
@@ -154,7 +157,7 @@ export function AudioPlayer({
               <button
                 onClick={onDownload}
                 className="p-2.5 text-charcoal-500 dark:text-cream-200 hover:text-charcoal-900 dark:hover:text-cream-50 hover:bg-cream-200 dark:hover:bg-charcoal-700 rounded-xl transition-colors flex-shrink-0"
-                aria-label="Download audio"
+                aria-label={t('audioPlayer.downloadAudio')}
               >
                 <Download className="w-4 h-4" />
               </button>

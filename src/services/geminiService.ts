@@ -3,7 +3,12 @@ import type { GeminiAnalysis } from '../types';
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent';
 
-const ANALYSIS_PROMPT = `You are an expert at analyzing Claude Code changelogs. Analyze the following changelog and return JSON with this exact structure:
+const getAnalysisPrompt = (language: string) => {
+  const langInstruction = language === 'pl'
+    ? 'IMPORTANT: Respond entirely in Polish language. All text in the JSON response must be in Polish.'
+    : 'Respond in English.';
+
+  return `You are an expert at analyzing Claude Code changelogs. Analyze the following changelog and return JSON with this exact structure:
 
 {
   "tldr": "150-200 word summary for busy developers highlighting the most important changes",
@@ -20,12 +25,15 @@ const ANALYSIS_PROMPT = `You are an expert at analyzing Claude Code changelogs. 
   "sentiment": "positive|neutral|critical"
 }
 
+${langInstruction}
+
 Be thorough but concise. Focus on what developers need to know to update their workflows.
 
 Changelog to analyze:
 `;
+};
 
-export async function analyzeChangelog(changelogText: string): Promise<GeminiAnalysis> {
+export async function analyzeChangelog(changelogText: string, language: string = 'en'): Promise<GeminiAnalysis> {
   if (!GEMINI_API_KEY) {
     throw new Error('Gemini API key not configured');
   }
@@ -40,7 +48,7 @@ export async function analyzeChangelog(changelogText: string): Promise<GeminiAna
         {
           parts: [
             {
-              text: ANALYSIS_PROMPT + changelogText,
+              text: getAnalysisPrompt(language) + changelogText,
             },
           ],
         },

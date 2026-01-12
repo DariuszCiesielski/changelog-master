@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { GeminiAnalysis } from '../types';
 import { AlertTriangle, AlertCircle, Sparkles, Wrench, Terminal, Code, Slash, Volume2, Loader2, Square, History, ChevronDown } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -25,6 +26,7 @@ export function MattersView({
   playingAudioFor,
   onStopAudio,
 }: MattersViewProps) {
+  const { t, i18n } = useTranslation();
   const [historyItems, setHistoryItems] = useState<AnalysisHistoryItem[]>([]);
   const [selectedVersion, setSelectedVersion] = useState<string | null>(null);
   const [historicalAnalysis, setHistoricalAnalysis] = useState<GeminiAnalysis | null>(null);
@@ -84,7 +86,7 @@ export function MattersView({
           <div className="h-32 bg-cream-200 dark:bg-charcoal-700 rounded-xl" />
         </div>
         <p className="text-center text-charcoal-500 dark:text-charcoal-400 mt-6">
-          Analyzing changelog with AI...
+          {t('mattersView.analyzing')}
         </p>
       </div>
     );
@@ -94,29 +96,29 @@ export function MattersView({
     return (
       <div className="max-w-4xl mx-auto p-8 text-center">
         <p className="text-charcoal-500 dark:text-charcoal-400">
-          Analysis not available. Please check your Gemini API key configuration.
+          {t('mattersView.notAvailable')}
         </p>
       </div>
     );
   }
 
   const getFullAnalysisText = () => {
-    let text = `Here's what matters in the latest Claude Code release. ${displayAnalysis.tldr}. `;
+    let text = `${t('mattersView.hereIsWhatMatters')}. ${displayAnalysis.tldr}. `;
 
     if (displayAnalysis.categories.critical_breaking_changes.length > 0) {
-      text += `Critical breaking changes: ${displayAnalysis.categories.critical_breaking_changes.join('. ')}. `;
+      text += `${t('mattersView.sections.criticalBreakingChanges')}: ${displayAnalysis.categories.critical_breaking_changes.join('. ')}. `;
     }
 
     if (displayAnalysis.categories.major_features.length > 0) {
-      text += `Major new features: ${displayAnalysis.categories.major_features.join('. ')}. `;
+      text += `${t('mattersView.sections.majorFeatures')}: ${displayAnalysis.categories.major_features.join('. ')}. `;
     }
 
     if (displayAnalysis.categories.important_fixes.length > 0) {
-      text += `Important fixes: ${displayAnalysis.categories.important_fixes.join('. ')}. `;
+      text += `${t('mattersView.sections.importantFixes')}: ${displayAnalysis.categories.important_fixes.join('. ')}. `;
     }
 
     if (displayAnalysis.action_items.length > 0) {
-      text += `Action items for you: ${displayAnalysis.action_items.join('. ')}`;
+      text += `${t('mattersView.sections.actionItems')}: ${displayAnalysis.action_items.join('. ')}`;
     }
 
     return text;
@@ -143,7 +145,7 @@ export function MattersView({
             ? 'bg-coral-400/20 dark:bg-coral-600/20 text-coral-600 dark:text-coral-400'
             : 'text-charcoal-500 hover:bg-cream-200 dark:hover:bg-charcoal-600 hover:text-coral-600'
         } disabled:opacity-50`}
-        title={isPlaying ? 'Stop' : 'Listen'}
+        title={isPlaying ? t('mattersView.stop') : t('mattersView.listen')}
       >
         {isGenerating ? (
           <Loader2 className="w-5 h-5 animate-spin" />
@@ -158,7 +160,7 @@ export function MattersView({
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString(i18n.language, {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
@@ -179,7 +181,7 @@ export function MattersView({
             >
               <History className="w-4 h-4" />
               <span className="text-sm font-medium">
-                {isViewingHistory ? selectedVersion : 'Current Analysis'}
+                {isViewingHistory ? selectedVersion : t('mattersView.currentAnalysis')}
               </span>
               <ChevronDown className={`w-4 h-4 transition-transform ${showHistoryDropdown ? 'rotate-180' : ''}`} />
             </button>
@@ -199,8 +201,8 @@ export function MattersView({
                         : 'hover:bg-cream-100 dark:hover:bg-charcoal-600 text-charcoal-700 dark:text-cream-200'
                     }`}
                   >
-                    <span className="font-medium">Current Analysis</span>
-                    <span className="text-xs text-charcoal-500 dark:text-charcoal-400">Latest</span>
+                    <span className="font-medium">{t('mattersView.currentAnalysis')}</span>
+                    <span className="text-xs text-charcoal-500 dark:text-charcoal-400">{t('mattersView.latest')}</span>
                   </button>
                   <div className="border-t border-cream-200 dark:border-charcoal-500" />
                   {historyItems.map((item) => (
@@ -230,7 +232,7 @@ export function MattersView({
               onClick={showCurrentAnalysis}
               className="text-sm text-coral-600 dark:text-coral-400 hover:underline"
             >
-              Back to current
+              {t('mattersView.backToCurrent')}
             </button>
           )}
         </div>
@@ -249,7 +251,7 @@ export function MattersView({
             <div className="p-3 bg-teal-500/10 dark:bg-teal-600/10 rounded-xl border border-teal-400/30 dark:border-teal-600/30 flex items-center gap-2">
               <History className="w-4 h-4 text-teal-600 dark:text-teal-400" />
               <span className="text-sm text-teal-700 dark:text-teal-400">
-                Viewing archived analysis: <strong>{selectedVersion}</strong>
+                {t('mattersView.viewingArchived', { version: selectedVersion })}
               </span>
             </div>
           )}
@@ -257,7 +259,7 @@ export function MattersView({
           {/* TLDR Section */}
           <div className="p-6 bg-gradient-to-r from-coral-400/10 to-coral-500/10 dark:from-coral-600/10 dark:to-coral-700/10 rounded-xl border border-coral-400/30 dark:border-coral-600/30">
             <div className="flex items-center gap-2 mb-4">
-              <h2 className="text-lg font-semibold text-coral-700 dark:text-coral-400">TL;DR</h2>
+              <h2 className="text-lg font-semibold text-coral-700 dark:text-coral-400">{t('mattersView.tldr')}</h2>
               <AudioButton text={displayAnalysis.tldr} label="tldr" />
             </div>
             <div className="prose prose-sm dark:prose-invert max-w-none prose-p:text-charcoal-700 dark:prose-p:text-cream-200 prose-p:leading-relaxed prose-strong:text-coral-600 dark:prose-strong:text-coral-400 prose-ul:my-2 prose-li:my-0.5">
@@ -283,20 +285,22 @@ export function MattersView({
               ) : (
                 <Volume2 className="w-5 h-5" />
               )}
-              {playingAudioFor === 'full-analysis' ? 'Stop' : 'Listen to Full Summary'}
+              {playingAudioFor === 'full-analysis' ? t('mattersView.stop') : t('mattersView.listenToFullSummary')}
             </button>
           </div>
 
           {/* Critical Breaking Changes */}
           {displayAnalysis.categories.critical_breaking_changes.length > 0 && (
             <Section
-              title="Critical Breaking Changes"
+              title={t('mattersView.sections.criticalBreakingChanges')}
               icon={<AlertTriangle className="w-5 h-5" />}
               items={displayAnalysis.categories.critical_breaking_changes}
               color="red"
               onAudio={(text) => handleAudioClick(text, 'breaking')}
               isGenerating={generatingAudioFor === 'breaking'}
               isPlaying={playingAudioFor === 'breaking'}
+              stopLabel={t('mattersView.stop')}
+              listenLabel={t('mattersView.listen')}
             />
           )}
 
@@ -305,7 +309,7 @@ export function MattersView({
             <div className="p-4 border-l-4 border-coral-500 bg-coral-400/10 dark:bg-coral-600/10 rounded-r-xl">
               <div className="flex items-center gap-2 mb-3">
                 <AlertCircle className="w-5 h-5 text-coral-600 dark:text-coral-400" />
-                <h3 className="font-semibold text-coral-700 dark:text-coral-400">Removals</h3>
+                <h3 className="font-semibold text-coral-700 dark:text-coral-400">{t('mattersView.sections.removals')}</h3>
               </div>
               <ul className="space-y-2">
                 {displayAnalysis.categories.removals.map((removal, idx) => (
@@ -319,11 +323,11 @@ export function MattersView({
                           : 'bg-coral-400/20 text-coral-500 dark:text-coral-400'
                       }`}
                     >
-                      {removal.severity}
+                      {t(`mattersView.severity.${removal.severity}`)}
                     </span>
                     <div>
                       <span className="font-medium text-charcoal-900 dark:text-cream-50">{removal.feature}</span>
-                      <span className="text-charcoal-600 dark:text-cream-300"> — {removal.why}</span>
+                      <span className="text-charcoal-600 dark:text-cream-300"> - {removal.why}</span>
                     </div>
                   </li>
                 ))}
@@ -334,76 +338,86 @@ export function MattersView({
           {/* Major Features */}
           {displayAnalysis.categories.major_features.length > 0 && (
             <Section
-              title="Major Features"
+              title={t('mattersView.sections.majorFeatures')}
               icon={<Sparkles className="w-5 h-5" />}
               items={displayAnalysis.categories.major_features}
               color="teal"
               onAudio={(text) => handleAudioClick(text, 'features')}
               isGenerating={generatingAudioFor === 'features'}
               isPlaying={playingAudioFor === 'features'}
+              stopLabel={t('mattersView.stop')}
+              listenLabel={t('mattersView.listen')}
             />
           )}
 
           {/* Important Fixes */}
           {displayAnalysis.categories.important_fixes.length > 0 && (
             <Section
-              title="Important Fixes"
+              title={t('mattersView.sections.importantFixes')}
               icon={<Wrench className="w-5 h-5" />}
               items={displayAnalysis.categories.important_fixes}
               color="gray"
               onAudio={(text) => handleAudioClick(text, 'fixes')}
               isGenerating={generatingAudioFor === 'fixes'}
               isPlaying={playingAudioFor === 'fixes'}
+              stopLabel={t('mattersView.stop')}
+              listenLabel={t('mattersView.listen')}
             />
           )}
 
           {/* New Slash Commands */}
           {displayAnalysis.categories.new_slash_commands.length > 0 && (
             <Section
-              title="New Slash Commands"
+              title={t('mattersView.sections.newSlashCommands')}
               icon={<Slash className="w-5 h-5" />}
               items={displayAnalysis.categories.new_slash_commands}
               color="purple"
               onAudio={(text) => handleAudioClick(text, 'commands')}
               isGenerating={generatingAudioFor === 'commands'}
               isPlaying={playingAudioFor === 'commands'}
+              stopLabel={t('mattersView.stop')}
+              listenLabel={t('mattersView.listen')}
             />
           )}
 
           {/* Terminal Improvements */}
           {displayAnalysis.categories.terminal_improvements.length > 0 && (
             <Section
-              title="Terminal Improvements"
+              title={t('mattersView.sections.terminalImprovements')}
               icon={<Terminal className="w-5 h-5" />}
               items={displayAnalysis.categories.terminal_improvements}
               color="blue"
               onAudio={(text) => handleAudioClick(text, 'terminal')}
               isGenerating={generatingAudioFor === 'terminal'}
               isPlaying={playingAudioFor === 'terminal'}
+              stopLabel={t('mattersView.stop')}
+              listenLabel={t('mattersView.listen')}
             />
           )}
 
           {/* API Changes */}
           {displayAnalysis.categories.api_changes.length > 0 && (
             <Section
-              title="API Changes"
+              title={t('mattersView.sections.apiChanges')}
               icon={<Code className="w-5 h-5" />}
               items={displayAnalysis.categories.api_changes}
               color="indigo"
               onAudio={(text) => handleAudioClick(text, 'api')}
               isGenerating={generatingAudioFor === 'api'}
               isPlaying={playingAudioFor === 'api'}
+              stopLabel={t('mattersView.stop')}
+              listenLabel={t('mattersView.listen')}
             />
           )}
 
           {/* Action Items */}
           {displayAnalysis.action_items.length > 0 && (
             <div className="p-4 bg-cream-100 dark:bg-charcoal-700 rounded-xl border border-cream-300 dark:border-charcoal-500">
-              <h3 className="font-semibold text-charcoal-900 dark:text-cream-50 mb-3">Action Items</h3>
+              <h3 className="font-semibold text-charcoal-900 dark:text-cream-50 mb-3">{t('mattersView.sections.actionItems')}</h3>
               <ul className="space-y-2">
                 {displayAnalysis.action_items.map((item, idx) => (
                   <li key={idx} className="flex items-start gap-2 text-charcoal-700 dark:text-cream-200">
-                    <span className="text-coral-500 mt-0.5">—</span>
+                    <span className="text-coral-500 mt-0.5">-</span>
                     <span>{item}</span>
                   </li>
                 ))}
@@ -424,9 +438,11 @@ interface SectionProps {
   onAudio?: (text: string) => void;
   isGenerating?: boolean;
   isPlaying?: boolean;
+  stopLabel?: string;
+  listenLabel?: string;
 }
 
-function Section({ title, icon, items, color, onAudio, isGenerating, isPlaying }: SectionProps) {
+function Section({ title, icon, items, color, onAudio, isGenerating, isPlaying, stopLabel = 'Stop', listenLabel = 'Listen' }: SectionProps) {
   const colorClasses = {
     red: 'border-coral-600 bg-coral-500/10 dark:bg-coral-600/10 text-coral-600 dark:text-coral-400',
     orange: 'border-coral-500 bg-coral-400/10 dark:bg-coral-500/10 text-coral-500 dark:text-coral-400',
@@ -458,7 +474,7 @@ function Section({ title, icon, items, color, onAudio, isGenerating, isPlaying }
                 ? 'bg-coral-400/20 dark:bg-coral-600/20 text-coral-600'
                 : 'text-charcoal-400 hover:bg-white/50 dark:hover:bg-charcoal-600 hover:text-coral-600'
             } disabled:opacity-50`}
-            title={isPlaying ? 'Stop' : 'Listen'}
+            title={isPlaying ? stopLabel : listenLabel}
           >
             {isGenerating ? (
               <Loader2 className="w-4 h-4 animate-spin" />

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Send, Loader2, X, Check, MessageSquare, Sparkles, Plus, Trash2, History } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
 import type { ChangelogVersion } from '../types';
 
@@ -25,6 +26,7 @@ interface ChatPanelProps {
 }
 
 export function ChatPanel({ versions, isOpen, onClose }: ChatPanelProps) {
+  const { t, i18n } = useTranslation();
   const [selectedVersions, setSelectedVersions] = useState<Set<string>>(new Set());
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
@@ -96,7 +98,7 @@ export function ChatPanel({ versions, isOpen, onClose }: ChatPanelProps) {
       const res = await fetch('/api/conversations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: 'New Chat' }),
+        body: JSON.stringify({ title: t('chat.newChat') }),
       });
       const data = await res.json();
       setCurrentConversationId(data.id);
@@ -205,6 +207,7 @@ export function ChatPanel({ versions, isOpen, onClose }: ChatPanelProps) {
         body: JSON.stringify({
           message: userMessage.content,
           context,
+          language: i18n.language || 'en',
           history: messages.slice(-10).map((m) => ({
             role: m.role,
             content: m.content,
@@ -242,7 +245,7 @@ export function ChatPanel({ versions, isOpen, onClose }: ChatPanelProps) {
       const errorMessage: Message = {
         id: `temp_${Date.now() + 1}`,
         role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.',
+        content: t('chat.errorMessage'),
         created_at: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -273,12 +276,12 @@ export function ChatPanel({ versions, isOpen, onClose }: ChatPanelProps) {
                 className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-coral-500 hover:bg-coral-600 text-white rounded-xl transition-colors"
               >
                 <Plus className="w-4 h-4" />
-                New Chat
+                {t('chat.newChat')}
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-2">
               {conversations.length === 0 ? (
-                <p className="text-sm text-charcoal-500 dark:text-charcoal-400 text-center py-4">No conversations yet</p>
+                <p className="text-sm text-charcoal-500 dark:text-charcoal-400 text-center py-4">{t('chat.noConversationsYet')}</p>
               ) : (
                 conversations.map((conv) => (
                   <div
@@ -294,7 +297,7 @@ export function ChatPanel({ versions, isOpen, onClose }: ChatPanelProps) {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-charcoal-900 dark:text-cream-50 truncate">{conv.title}</p>
                       <p className="text-xs text-charcoal-500 dark:text-charcoal-400">
-                        {conv.message_count} messages
+                        {conv.message_count} {t('chat.messages')}
                       </p>
                     </div>
                     <button
@@ -316,22 +319,22 @@ export function ChatPanel({ versions, isOpen, onClose }: ChatPanelProps) {
         {/* Version Selector Sidebar */}
         <div className="w-56 border-r border-cream-300 dark:border-charcoal-500 flex flex-col">
           <div className="p-3 border-b border-cream-300 dark:border-charcoal-500">
-            <h3 className="font-semibold text-charcoal-900 dark:text-cream-50 text-sm mb-1">Select Releases</h3>
+            <h3 className="font-semibold text-charcoal-900 dark:text-cream-50 text-sm mb-1">{t('chat.selectReleases')}</h3>
             <p className="text-xs text-charcoal-500 dark:text-charcoal-400 mb-2">
-              Tag versions as context
+              {t('chat.tagVersionsAsContext')}
             </p>
             <div className="flex gap-1">
               <button
                 onClick={selectAll}
                 className="flex-1 text-xs px-2 py-1 bg-coral-400/20 dark:bg-coral-600/20 text-coral-700 dark:text-coral-400 rounded-lg hover:bg-coral-400/30 dark:hover:bg-coral-600/30 transition-colors"
               >
-                All
+                {t('chat.all')}
               </button>
               <button
                 onClick={clearSelection}
                 className="flex-1 text-xs px-2 py-1 bg-cream-200 dark:bg-charcoal-700 text-charcoal-700 dark:text-cream-200 rounded-lg hover:bg-cream-300 dark:hover:bg-charcoal-600 transition-colors"
               >
-                Clear
+                {t('chat.clear')}
               </button>
             </div>
           </div>
@@ -361,7 +364,7 @@ export function ChatPanel({ versions, isOpen, onClose }: ChatPanelProps) {
           </div>
           <div className="p-2 border-t border-cream-300 dark:border-charcoal-500 bg-cream-100 dark:bg-charcoal-700/50">
             <div className="text-xs text-charcoal-500 dark:text-charcoal-400">
-              {selectedVersions.size} selected
+              {selectedVersions.size} {t('chat.selected')}
             </div>
           </div>
         </div>
@@ -376,20 +379,20 @@ export function ChatPanel({ versions, isOpen, onClose }: ChatPanelProps) {
                 className={`p-2 rounded-xl transition-colors ${
                   showHistory ? 'bg-coral-400/20 dark:bg-coral-600/20 text-coral-600' : 'hover:bg-cream-200 dark:hover:bg-charcoal-700 text-charcoal-500'
                 }`}
-                title="Chat history"
+                title={t('chat.chatHistory')}
               >
                 <History className="w-5 h-5" />
               </button>
               <Sparkles className="w-5 h-5 text-coral-500" />
               <h2 className="text-lg font-semibold text-charcoal-900 dark:text-cream-50">
-                Changelog Assistant
+                {t('chat.title')}
               </h2>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={createNewConversation}
                 className="p-2 hover:bg-cream-200 dark:hover:bg-charcoal-700 rounded-xl transition-colors text-charcoal-500"
-                title="New chat"
+                title={t('chat.newChat')}
               >
                 <Plus className="w-5 h-5" />
               </button>
@@ -407,15 +410,15 @@ export function ChatPanel({ versions, isOpen, onClose }: ChatPanelProps) {
             {messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-charcoal-500 dark:text-charcoal-400">
                 <MessageSquare className="w-12 h-12 mb-4 opacity-50" />
-                <p className="text-center mb-2">Ask questions about Claude Code changelogs</p>
+                <p className="text-center mb-2">{t('chat.askAboutChangelogs')}</p>
                 <p className="text-sm text-center opacity-75 mb-6">
-                  Select versions on the left to include them as context
+                  {t('chat.selectVersionsForContext')}
                 </p>
                 <div className="grid grid-cols-1 gap-2 max-w-sm">
                   {[
-                    'What breaking changes should I know about?',
-                    'Summarize the new features',
-                    'What bugs were fixed recently?',
+                    t('chat.suggestions.breakingChanges'),
+                    t('chat.suggestions.newFeatures'),
+                    t('chat.suggestions.bugsFixes'),
                   ].map((suggestion) => (
                     <button
                       key={suggestion}
@@ -454,7 +457,7 @@ export function ChatPanel({ versions, isOpen, onClose }: ChatPanelProps) {
                           : 'text-charcoal-500 dark:text-charcoal-400'
                       }`}
                     >
-                      {new Date(message.created_at).toLocaleTimeString()}
+                      {new Date(message.created_at).toLocaleTimeString(i18n.language)}
                     </p>
                   </div>
                 </div>
@@ -475,7 +478,7 @@ export function ChatPanel({ versions, isOpen, onClose }: ChatPanelProps) {
             {selectedVersions.size === 0 && (
               <div className="mb-2 text-xs text-coral-600 dark:text-coral-400 flex items-center gap-1">
                 <Sparkles className="w-3 h-3" />
-                Tip: Select versions to give the assistant more context
+                {t('chat.tipSelectVersions')}
               </div>
             )}
             <div className="flex gap-2">
@@ -484,7 +487,7 @@ export function ChatPanel({ versions, isOpen, onClose }: ChatPanelProps) {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask about the changelog..."
+                placeholder={t('chat.askAboutChangelog')}
                 rows={1}
                 className="flex-1 resize-none bg-cream-100 dark:bg-charcoal-700 border-0 rounded-xl px-4 py-3 text-charcoal-900 dark:text-cream-50 placeholder-charcoal-500 focus:ring-2 focus:ring-teal-500 focus:outline-none transition-colors"
               />

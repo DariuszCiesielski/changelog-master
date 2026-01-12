@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { ChangelogVersion, GeminiAnalysis, ChangelogSource } from '../types';
 import {
   fetchChangelog,
@@ -27,6 +28,7 @@ interface UseChangelogReturn {
 }
 
 export function useChangelog(): UseChangelogReturn {
+  const { i18n } = useTranslation();
   const [rawChangelog, setRawChangelog] = useState<string | null>(null);
   const [parsedChangelog, setParsedChangelog] = useState<ChangelogVersion[]>([]);
   const [analysis, setAnalysis] = useState<GeminiAnalysis | null>(null);
@@ -75,7 +77,9 @@ export function useChangelog(): UseChangelogReturn {
         `## ${v.version}\n${v.items.map((i) => `- ${i.content}`).join('\n')}`
       ).join('\n\n');
 
-      const versionHash = hashString(latestVersionText);
+      // Include language in cache key so different languages have separate caches
+      const currentLang = i18n.language || 'en';
+      const versionHash = hashString(latestVersionText + '_' + currentLang);
 
       const cached = await getCachedAnalysis(versionHash);
       if (cached) {
@@ -83,7 +87,7 @@ export function useChangelog(): UseChangelogReturn {
       } else {
         setIsAnalyzing(true);
         try {
-          const result = await analyzeChangelog(latestVersionText);
+          const result = await analyzeChangelog(latestVersionText, currentLang);
           setAnalysis(result);
           await setCachedAnalysis(versionHash, result);
         } catch (analysisError) {
@@ -101,7 +105,7 @@ export function useChangelog(): UseChangelogReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedSourceId]);
+  }, [selectedSourceId, i18n.language]);
 
   useEffect(() => {
     loadChangelog();

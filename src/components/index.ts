@@ -8,3 +8,4 @@ export * from './LoadingSkeleton';
 export * from './SettingsPanel';
 export * from './ChatPanel';
 export * from './SourcesPanel';
+export * from './LanguageSwitcher';

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ChevronDown, ChevronRight, Copy, Check, Volume2, Loader2, Square } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { ChangelogVersion } from '../types';
 
 interface ChangelogViewProps {
@@ -21,6 +22,7 @@ export function ChangelogView({
   playingAudioFor,
   onStopAudio,
 }: ChangelogViewProps) {
+  const { t } = useTranslation();
   const [expandedVersions, setExpandedVersions] = useState<Set<string>>(
     new Set(versions.slice(0, 1).map((v) => v.version))
   );
@@ -60,15 +62,15 @@ export function ChangelogView({
   };
 
   const getVersionText = (version: ChangelogVersion) => {
-    const header = `Version ${version.version}${version.date ? `, released ${version.date}` : ''}.`;
+    const header = `${t('changelogView.version', { version: version.version })}${version.date ? `, ${t('changelogView.released', { date: version.date })}` : ''}.`;
     const items = version.items.map((item) => {
-      const typeLabel = item.type === 'feature' ? 'New feature' :
-        item.type === 'fix' ? 'Bug fix' :
-        item.type === 'removal' ? 'Removal' :
-        item.type === 'breaking' ? 'Breaking change' : 'Update';
+      const typeLabel = item.type === 'feature' ? t('changelogView.types.feature') :
+        item.type === 'fix' ? t('changelogView.types.fix') :
+        item.type === 'removal' ? t('changelogView.types.removal') :
+        item.type === 'breaking' ? t('changelogView.types.breaking') : t('changelogView.types.other');
       return `${typeLabel}: ${item.content}`;
     }).join('. ');
-    return `${header} Changes include: ${items}`;
+    return `${header} ${items}`;
   };
 
   const handleAudioClick = (e: React.MouseEvent, version: ChangelogVersion) => {
@@ -86,7 +88,7 @@ export function ChangelogView({
   if (!rawMarkdown && versions.length === 0) {
     return (
       <div className="p-8 text-center text-charcoal-400 dark:text-charcoal-500">
-        No changelog data available
+        {t('changelogView.noData')}
       </div>
     );
   }
@@ -124,7 +126,7 @@ export function ChangelogView({
                   )}
                 </div>
                 <span className="text-sm text-charcoal-500 dark:text-charcoal-400">
-                  {version.items.length} changes
+                  {version.items.length} {t('changelogView.changes')}
                 </span>
               </button>
 
@@ -136,8 +138,8 @@ export function ChangelogView({
                     ? 'bg-coral-400/20 dark:bg-coral-600/20 text-coral-600 dark:text-coral-400'
                     : 'text-charcoal-500 hover:bg-cream-200 dark:hover:bg-charcoal-600 hover:text-coral-600'
                 } disabled:opacity-50`}
-                aria-label={isPlaying ? 'Stop audio' : 'Generate audio for this version'}
-                title={isPlaying ? 'Stop' : 'Listen to this release'}
+                aria-label={isPlaying ? t('changelogView.stopAudio') : t('changelogView.generateAudio')}
+                title={isPlaying ? t('changelogView.stop') : t('changelogView.listenToRelease')}
               >
                 {isGenerating ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -167,7 +169,7 @@ export function ChangelogView({
                       <button
                         onClick={() => copyToClipboard(item.content, itemId)}
                         className="flex-shrink-0 p-1 opacity-0 group-hover:opacity-100 text-charcoal-400 hover:text-charcoal-600 dark:hover:text-cream-200 transition-opacity"
-                        aria-label="Copy to clipboard"
+                        aria-label={t('changelogView.copyToClipboard')}
                       >
                         {copiedItem === itemId ? (
                           <Check className="w-4 h-4 text-teal-500" />

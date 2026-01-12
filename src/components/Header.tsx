@@ -1,6 +1,8 @@
 import { RefreshCw, Sun, Moon, Mail, ChevronDown } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { SettingsPanel } from './SettingsPanel';
 import { SourcesPanel } from './SourcesPanel';
+import { LanguageSwitcher } from './LanguageSwitcher';
 import type { ChangelogSource } from '../types';
 
 interface HeaderProps {
@@ -40,10 +42,12 @@ export function Header({
   selectedSourceName,
   onSelectSource,
 }: HeaderProps) {
+  const { t, i18n } = useTranslation();
+
   const formatLastFetched = (timestamp: number | null) => {
     if (!timestamp) return '';
     const date = new Date(timestamp);
-    return date.toLocaleString();
+    return date.toLocaleString(i18n.language);
   };
 
   const activeSources = sources.filter(s => s.is_active);
@@ -55,13 +59,13 @@ export function Header({
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-semibold text-charcoal-900 dark:text-cream-50 tracking-tight transition-colors duration-300">
-                {selectedSourceName} Changelog
+                {selectedSourceName} {t('header.changelog')}
               </h1>
               {activeSources.length > 1 && onSelectSource && (
                 <div className="relative group">
                   <button
                     className="p-1.5 text-charcoal-500 dark:text-charcoal-400 hover:text-charcoal-900 dark:hover:text-cream-50 rounded-lg hover:bg-cream-200 dark:hover:bg-charcoal-700 transition-colors"
-                    aria-label="Switch changelog source"
+                    aria-label={t('header.switchSource')}
                   >
                     <ChevronDown className="w-4 h-4" />
                   </button>
@@ -98,7 +102,7 @@ export function Header({
           <div className="flex items-center gap-1">
             {lastFetched && (
               <span className="text-sm text-charcoal-500 dark:text-cream-300 hidden sm:block mr-2 transition-colors">
-                Updated: {formatLastFetched(lastFetched)}
+                {t('header.updated')}: {formatLastFetched(lastFetched)}
               </span>
             )}
 
@@ -106,8 +110,8 @@ export function Header({
               onClick={onRefresh}
               disabled={isLoading}
               className="p-2.5 text-charcoal-600 dark:text-cream-200 hover:text-charcoal-900 dark:hover:text-cream-50 hover:bg-cream-200 dark:hover:bg-charcoal-700 rounded-xl transition-colors disabled:opacity-50"
-              aria-label="Refresh changelog"
-              title="Refresh"
+              aria-label={t('header.refresh')}
+              title={t('header.refresh')}
             >
               <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
             </button>
@@ -115,8 +119,8 @@ export function Header({
             <button
               onClick={onToggleTheme}
               className="p-2.5 text-charcoal-600 dark:text-cream-200 hover:text-charcoal-900 dark:hover:text-cream-50 hover:bg-cream-200 dark:hover:bg-charcoal-700 rounded-xl transition-colors relative overflow-hidden"
-              aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-              title={theme === 'light' ? 'Dark mode' : 'Light mode'}
+              aria-label={theme === 'light' ? t('header.darkMode') : t('header.lightMode')}
+              title={theme === 'light' ? t('header.darkMode') : t('header.lightMode')}
             >
               <div className="relative w-5 h-5">
                 <Sun
@@ -140,11 +144,13 @@ export function Header({
               onClick={onSendEmail}
               disabled={isEmailSending}
               className="p-2.5 text-charcoal-600 dark:text-cream-200 hover:text-charcoal-900 dark:hover:text-cream-50 hover:bg-cream-200 dark:hover:bg-charcoal-700 rounded-xl transition-colors disabled:opacity-50"
-              aria-label="Send changelog to email"
-              title="Send to email"
+              aria-label={t('header.sendToEmail')}
+              title={t('header.sendToEmail')}
             >
               <Mail className={`w-5 h-5 ${isEmailSending ? 'animate-pulse' : ''}`} />
             </button>
+
+            <LanguageSwitcher />
 
             <SourcesPanel />
 

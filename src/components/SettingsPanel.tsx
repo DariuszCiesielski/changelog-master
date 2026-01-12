@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Settings, X, Clock, Bell, Volume2, Loader2, CheckCircle, Mail, AlertCircle, Moon } from 'lucide-react';
 import { VOICE_OPTIONS } from '../types';
 
@@ -9,34 +10,8 @@ interface SettingsPanelProps {
   onDefaultThemeChange: (theme: 'light' | 'dark') => void;
 }
 
-const INTERVAL_OPTIONS = [
-  { value: 0, label: 'Manual only' },
-  { value: 60000, label: '1 minute' },
-  { value: 300000, label: '5 minutes' },
-  { value: 900000, label: '15 minutes' },
-  { value: 1800000, label: '30 minutes' },
-  { value: 3600000, label: '1 hour' },
-  { value: 7200000, label: '2 hours' },
-  { value: 21600000, label: '6 hours' },
-  { value: 86400000, label: '24 hours' },
-  { value: 604800000, label: '1 week' },
-  { value: 1209600000, label: '2 weeks' },
-];
-
-const NOTIFICATION_INTERVALS = [
-  { value: 0, label: 'Disabled' },
-  { value: 300000, label: 'Every 5 minutes' },
-  { value: 900000, label: 'Every 15 minutes' },
-  { value: 1800000, label: 'Every 30 minutes' },
-  { value: 3600000, label: 'Every hour' },
-  { value: 21600000, label: 'Every 6 hours' },
-  { value: 43200000, label: 'Every 12 hours' },
-  { value: 86400000, label: 'Once a day' },
-  { value: 604800000, label: 'Once a week' },
-  { value: 1209600000, label: 'Every two weeks' },
-];
-
 export function SettingsPanel({ refreshInterval, onRefreshIntervalChange, defaultTheme, onDefaultThemeChange }: SettingsPanelProps) {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(false);
   const [alwaysSendEmail, setAlwaysSendEmail] = useState(false);
@@ -52,6 +27,33 @@ export function SettingsPanel({ refreshInterval, onRefreshIntervalChange, defaul
   const [testResult, setTestResult] = useState<'success' | 'error' | null>(null);
   const [sendingDemoEmail, setSendingDemoEmail] = useState(false);
   const [demoEmailResult, setDemoEmailResult] = useState<'success' | 'error' | null>(null);
+
+  const INTERVAL_OPTIONS = [
+    { value: 0, label: t('settings.intervals.manualOnly') },
+    { value: 60000, label: t('settings.intervals.oneMinute') },
+    { value: 300000, label: t('settings.intervals.fiveMinutes') },
+    { value: 900000, label: t('settings.intervals.fifteenMinutes') },
+    { value: 1800000, label: t('settings.intervals.thirtyMinutes') },
+    { value: 3600000, label: t('settings.intervals.oneHour') },
+    { value: 7200000, label: t('settings.intervals.twoHours') },
+    { value: 21600000, label: t('settings.intervals.sixHours') },
+    { value: 86400000, label: t('settings.intervals.twentyFourHours') },
+    { value: 604800000, label: t('settings.intervals.oneWeek') },
+    { value: 1209600000, label: t('settings.intervals.twoWeeks') },
+  ];
+
+  const NOTIFICATION_INTERVALS = [
+    { value: 0, label: t('settings.notificationIntervals.disabled') },
+    { value: 300000, label: t('settings.notificationIntervals.everyFiveMinutes') },
+    { value: 900000, label: t('settings.notificationIntervals.everyFifteenMinutes') },
+    { value: 1800000, label: t('settings.notificationIntervals.everyThirtyMinutes') },
+    { value: 3600000, label: t('settings.notificationIntervals.everyHour') },
+    { value: 21600000, label: t('settings.notificationIntervals.everySixHours') },
+    { value: 43200000, label: t('settings.notificationIntervals.everyTwelveHours') },
+    { value: 86400000, label: t('settings.notificationIntervals.onceADay') },
+    { value: 604800000, label: t('settings.notificationIntervals.onceAWeek') },
+    { value: 1209600000, label: t('settings.notificationIntervals.everyTwoWeeks') },
+  ];
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -170,8 +172,8 @@ export function SettingsPanel({ refreshInterval, onRefreshIntervalChange, defaul
       <button
         onClick={() => setIsOpen(true)}
         className="p-2.5 text-charcoal-600 dark:text-cream-200 hover:text-charcoal-900 dark:hover:text-cream-50 hover:bg-cream-200 dark:hover:bg-charcoal-700 rounded-xl transition-colors"
-        aria-label="Settings"
-        title="Settings"
+        aria-label={t('settings.title')}
+        title={t('settings.title')}
       >
         <Settings className="w-5 h-5" />
       </button>
@@ -184,11 +186,11 @@ export function SettingsPanel({ refreshInterval, onRefreshIntervalChange, defaul
           />
           <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-white dark:bg-charcoal-800 rounded-xl shadow-2xl z-50 p-6 max-h-[90vh] overflow-y-auto transition-colors duration-500">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-charcoal-900 dark:text-cream-50">Settings</h2>
+              <h2 className="text-xl font-semibold text-charcoal-900 dark:text-cream-50">{t('settings.title')}</h2>
               <button
                 onClick={() => setIsOpen(false)}
                 className="p-1 text-charcoal-500 hover:bg-cream-200 dark:hover:bg-charcoal-700 rounded-lg transition-colors"
-                aria-label="Close settings"
+                aria-label={t('settings.close')}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -204,11 +206,11 @@ export function SettingsPanel({ refreshInterval, onRefreshIntervalChange, defaul
                 <div>
                   <h3 className="flex items-center gap-2 text-sm font-medium text-charcoal-900 dark:text-cream-50 mb-4">
                     <Moon className="w-4 h-4" />
-                    Appearance
+                    {t('settings.appearance')}
                   </h3>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-charcoal-700 dark:text-cream-200">
-                      Use dark mode by default
+                      {t('settings.useDarkModeDefault')}
                     </span>
                     <button
                       onClick={() => onDefaultThemeChange(defaultTheme === 'dark' ? 'light' : 'dark')}
@@ -232,7 +234,7 @@ export function SettingsPanel({ refreshInterval, onRefreshIntervalChange, defaul
                 <div>
                   <label className="flex items-center gap-2 text-sm font-medium text-charcoal-700 dark:text-cream-200 mb-2">
                     <Clock className="w-4 h-4" />
-                    Auto-refresh interval (UI)
+                    {t('settings.autoRefreshInterval')}
                   </label>
                   <select
                     value={refreshInterval}
@@ -254,13 +256,13 @@ export function SettingsPanel({ refreshInterval, onRefreshIntervalChange, defaul
                 <div>
                   <h3 className="flex items-center gap-2 text-sm font-medium text-charcoal-900 dark:text-cream-50 mb-4">
                     <Bell className="w-4 h-4" />
-                    Email Notifications
+                    {t('settings.emailNotifications')}
                   </h3>
 
                   {/* Enable toggle */}
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-sm text-charcoal-700 dark:text-cream-200">
-                      Notify me when a new version is released
+                      {t('settings.notifyNewVersion')}
                     </span>
                     <button
                       onClick={() => handleEmailNotificationsChange(!emailNotificationsEnabled)}
@@ -280,10 +282,10 @@ export function SettingsPanel({ refreshInterval, onRefreshIntervalChange, defaul
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <span className="text-sm text-charcoal-700 dark:text-cream-200">
-                        Send email on every check
+                        {t('settings.sendOnEveryCheck')}
                       </span>
                       <p className="text-xs text-charcoal-500 dark:text-charcoal-400">
-                        Even when no new version is released
+                        {t('settings.evenWhenNoNewVersion')}
                       </p>
                     </div>
                     <button
@@ -304,7 +306,7 @@ export function SettingsPanel({ refreshInterval, onRefreshIntervalChange, defaul
                   {/* Check interval */}
                   <div className="mb-4">
                     <label className="block text-sm text-charcoal-600 dark:text-charcoal-400 mb-1">
-                      Check for new versions
+                      {t('settings.checkForNewVersions')}
                     </label>
                     <select
                       value={notificationCheckInterval}
@@ -324,7 +326,7 @@ export function SettingsPanel({ refreshInterval, onRefreshIntervalChange, defaul
                   <div className="mb-4">
                     <label className="flex items-center gap-2 text-sm text-charcoal-600 dark:text-charcoal-400 mb-1">
                       <Volume2 className="w-4 h-4" />
-                      Audio voice for email attachment
+                      {t('settings.audioVoiceForEmail')}
                     </label>
                     <select
                       value={notificationVoice}
@@ -344,20 +346,20 @@ export function SettingsPanel({ refreshInterval, onRefreshIntervalChange, defaul
                   {monitorStatus && (
                     <div className="p-3 bg-cream-100 dark:bg-charcoal-700/50 rounded-xl text-sm">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-charcoal-600 dark:text-charcoal-400">Cron status:</span>
+                        <span className="text-charcoal-600 dark:text-charcoal-400">{t('settings.cronStatus')}</span>
                         <span className={`flex items-center gap-1 ${monitorStatus.isRunning ? 'text-teal-600' : 'text-charcoal-500'}`}>
                           <span className={`w-2 h-2 rounded-full ${monitorStatus.isRunning ? 'bg-teal-500 animate-pulse' : 'bg-charcoal-400'}`} />
-                          {monitorStatus.isRunning ? 'Running' : 'Stopped'}
+                          {monitorStatus.isRunning ? t('settings.running') : t('settings.stopped')}
                         </span>
                       </div>
                       {monitorStatus.cronExpression && (
                         <div className="text-charcoal-500 dark:text-charcoal-400 mb-1">
-                          Schedule: <span className="font-mono text-xs bg-cream-200 dark:bg-charcoal-600 px-1.5 py-0.5 rounded">{monitorStatus.cronExpression}</span>
+                          {t('settings.schedule')} <span className="font-mono text-xs bg-cream-200 dark:bg-charcoal-600 px-1.5 py-0.5 rounded">{monitorStatus.cronExpression}</span>
                         </div>
                       )}
                       {monitorStatus.lastKnownVersion && (
                         <div className="text-charcoal-500 dark:text-charcoal-400">
-                          Last known version: <span className="font-mono">{monitorStatus.lastKnownVersion}</span>
+                          {t('settings.lastKnownVersion')} <span className="font-mono">{monitorStatus.lastKnownVersion}</span>
                         </div>
                       )}
                     </div>
@@ -372,15 +374,15 @@ export function SettingsPanel({ refreshInterval, onRefreshIntervalChange, defaul
                     {testingNotification ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        Checking...
+                        {t('settings.checking')}
                       </>
                     ) : testResult === 'success' ? (
                       <>
                         <CheckCircle className="w-4 h-4 text-teal-500" />
-                        Check complete
+                        {t('settings.checkComplete')}
                       </>
                     ) : (
-                      'Check for new version now'
+                      t('settings.checkForNewVersionNow')
                     )}
                   </button>
 
@@ -393,22 +395,22 @@ export function SettingsPanel({ refreshInterval, onRefreshIntervalChange, defaul
                     {sendingDemoEmail ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        Generating & Sending...
+                        {t('settings.generatingSending')}
                       </>
                     ) : demoEmailResult === 'success' ? (
                       <>
                         <CheckCircle className="w-4 h-4" />
-                        Email Sent!
+                        {t('settings.emailSent')}
                       </>
                     ) : demoEmailResult === 'error' ? (
                       <>
                         <AlertCircle className="w-4 h-4" />
-                        Failed to send
+                        {t('settings.failedToSend')}
                       </>
                     ) : (
                       <>
                         <Mail className="w-4 h-4" />
-                        Send Demo Email with Audio
+                        {t('settings.sendDemoEmail')}
                       </>
                     )}
                   </button>
@@ -417,7 +419,7 @@ export function SettingsPanel({ refreshInterval, onRefreshIntervalChange, defaul
                 {/* Info */}
                 <div className="p-4 bg-coral-400/10 dark:bg-coral-600/10 rounded-xl border border-coral-400/30 dark:border-coral-600/30">
                   <p className="text-xs text-coral-700 dark:text-coral-400">
-                    When a new changelog version is detected, you'll receive an email with the AI-generated summary and an audio file attachment.
+                    {t('settings.infoText')}
                   </p>
                 </div>
               </div>
