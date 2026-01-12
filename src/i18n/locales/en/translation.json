@@ -6,7 +6,8 @@
     "darkMode": "Dark mode",
     "lightMode": "Light mode",
     "sendToEmail": "Send to email",
-    "switchSource": "Switch changelog source"
+    "switchSource": "Switch changelog source",
+    "selectSource": "Select Source"
   },
   "tabs": {
     "changelog": "Changelog",

@@ -6,7 +6,8 @@
     "darkMode": "Tryb ciemny",
     "lightMode": "Tryb jasny",
     "sendToEmail": "Wyślij na email",
-    "switchSource": "Zmień źródło changelogu"
+    "switchSource": "Zmień źródło changelogu",
+    "selectSource": "Wybierz źródło"
   },
   "tabs": {
     "changelog": "Lista zmian",
