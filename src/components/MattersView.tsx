@@ -77,6 +77,18 @@ export function MattersView({
   const displayAnalysis = selectedVersion ? historicalAnalysis : analysis;
   const isViewingHistory = selectedVersion !== null;
 
+  // Safely access categories and action_items with defaults
+  const categories = displayAnalysis?.categories ?? {
+    critical_breaking_changes: [],
+    removals: [],
+    major_features: [],
+    important_fixes: [],
+    new_slash_commands: [],
+    terminal_improvements: [],
+    api_changes: [],
+  };
+  const actionItems = displayAnalysis?.action_items ?? [];
+
   if (isAnalyzing && !isViewingHistory) {
     return (
       <div className="max-w-4xl mx-auto p-8">
@@ -105,20 +117,20 @@ export function MattersView({
   const getFullAnalysisText = () => {
     let text = `${t('mattersView.hereIsWhatMatters')}. ${displayAnalysis.tldr}. `;
 
-    if (displayAnalysis.categories.critical_breaking_changes.length > 0) {
-      text += `${t('mattersView.sections.criticalBreakingChanges')}: ${displayAnalysis.categories.critical_breaking_changes.join('. ')}. `;
+    if (categories.critical_breaking_changes.length > 0) {
+      text += `${t('mattersView.sections.criticalBreakingChanges')}: ${categories.critical_breaking_changes.join('. ')}. `;
     }
 
-    if (displayAnalysis.categories.major_features.length > 0) {
-      text += `${t('mattersView.sections.majorFeatures')}: ${displayAnalysis.categories.major_features.join('. ')}. `;
+    if (categories.major_features.length > 0) {
+      text += `${t('mattersView.sections.majorFeatures')}: ${categories.major_features.join('. ')}. `;
     }
 
-    if (displayAnalysis.categories.important_fixes.length > 0) {
-      text += `${t('mattersView.sections.importantFixes')}: ${displayAnalysis.categories.important_fixes.join('. ')}. `;
+    if (categories.important_fixes.length > 0) {
+      text += `${t('mattersView.sections.importantFixes')}: ${categories.important_fixes.join('. ')}. `;
     }
 
-    if (displayAnalysis.action_items.length > 0) {
-      text += `${t('mattersView.sections.actionItems')}: ${displayAnalysis.action_items.join('. ')}`;
+    if (actionItems.length > 0) {
+      text += `${t('mattersView.sections.actionItems')}: ${actionItems.join('. ')}`;
     }
 
     return text;
@@ -290,11 +302,11 @@ export function MattersView({
           </div>
 
           {/* Critical Breaking Changes */}
-          {displayAnalysis.categories.critical_breaking_changes.length > 0 && (
+          {categories.critical_breaking_changes.length > 0 && (
             <Section
               title={t('mattersView.sections.criticalBreakingChanges')}
               icon={<AlertTriangle className="w-5 h-5" />}
-              items={displayAnalysis.categories.critical_breaking_changes}
+              items={categories.critical_breaking_changes}
               color="red"
               onAudio={(text) => handleAudioClick(text, 'breaking')}
               isGenerating={generatingAudioFor === 'breaking'}
@@ -305,14 +317,14 @@ export function MattersView({
           )}
 
           {/* Removals */}
-          {displayAnalysis.categories.removals.length > 0 && (
+          {categories.removals.length > 0 && (
             <div className="p-4 border-l-4 border-coral-500 bg-coral-400/10 dark:bg-coral-600/10 rounded-r-xl">
               <div className="flex items-center gap-2 mb-3">
                 <AlertCircle className="w-5 h-5 text-coral-600 dark:text-coral-400" />
                 <h3 className="font-semibold text-coral-700 dark:text-coral-400">{t('mattersView.sections.removals')}</h3>
               </div>
               <ul className="space-y-2">
-                {displayAnalysis.categories.removals.map((removal, idx) => (
+                {categories.removals.map((removal, idx) => (
                   <li key={idx} className="flex items-start gap-2">
                     <span
                       className={`px-2 py-0.5 text-xs rounded-lg ${
@@ -336,11 +348,11 @@ export function MattersView({
           )}
 
           {/* Major Features */}
-          {displayAnalysis.categories.major_features.length > 0 && (
+          {categories.major_features.length > 0 && (
             <Section
               title={t('mattersView.sections.majorFeatures')}
               icon={<Sparkles className="w-5 h-5" />}
-              items={displayAnalysis.categories.major_features}
+              items={categories.major_features}
               color="teal"
               onAudio={(text) => handleAudioClick(text, 'features')}
               isGenerating={generatingAudioFor === 'features'}
@@ -351,11 +363,11 @@ export function MattersView({
           )}
 
           {/* Important Fixes */}
-          {displayAnalysis.categories.important_fixes.length > 0 && (
+          {categories.important_fixes.length > 0 && (
             <Section
               title={t('mattersView.sections.importantFixes')}
               icon={<Wrench className="w-5 h-5" />}
-              items={displayAnalysis.categories.important_fixes}
+              items={categories.important_fixes}
               color="gray"
               onAudio={(text) => handleAudioClick(text, 'fixes')}
               isGenerating={generatingAudioFor === 'fixes'}
@@ -366,11 +378,11 @@ export function MattersView({
           )}
 
           {/* New Slash Commands */}
-          {displayAnalysis.categories.new_slash_commands.length > 0 && (
+          {categories.new_slash_commands.length > 0 && (
             <Section
               title={t('mattersView.sections.newSlashCommands')}
               icon={<Slash className="w-5 h-5" />}
-              items={displayAnalysis.categories.new_slash_commands}
+              items={categories.new_slash_commands}
               color="purple"
               onAudio={(text) => handleAudioClick(text, 'commands')}
               isGenerating={generatingAudioFor === 'commands'}
@@ -381,11 +393,11 @@ export function MattersView({
           )}
 
           {/* Terminal Improvements */}
-          {displayAnalysis.categories.terminal_improvements.length > 0 && (
+          {categories.terminal_improvements.length > 0 && (
             <Section
               title={t('mattersView.sections.terminalImprovements')}
               icon={<Terminal className="w-5 h-5" />}
-              items={displayAnalysis.categories.terminal_improvements}
+              items={categories.terminal_improvements}
               color="blue"
               onAudio={(text) => handleAudioClick(text, 'terminal')}
               isGenerating={generatingAudioFor === 'terminal'}
@@ -396,11 +408,11 @@ export function MattersView({
           )}
 
           {/* API Changes */}
-          {displayAnalysis.categories.api_changes.length > 0 && (
+          {categories.api_changes.length > 0 && (
             <Section
               title={t('mattersView.sections.apiChanges')}
               icon={<Code className="w-5 h-5" />}
-              items={displayAnalysis.categories.api_changes}
+              items={categories.api_changes}
               color="indigo"
               onAudio={(text) => handleAudioClick(text, 'api')}
               isGenerating={generatingAudioFor === 'api'}
@@ -411,11 +423,11 @@ export function MattersView({
           )}
 
           {/* Action Items */}
-          {displayAnalysis.action_items.length > 0 && (
+          {actionItems.length > 0 && (
             <div className="p-4 bg-cream-100 dark:bg-charcoal-700 rounded-xl border border-cream-300 dark:border-charcoal-500">
               <h3 className="font-semibold text-charcoal-900 dark:text-cream-50 mb-3">{t('mattersView.sections.actionItems')}</h3>
               <ul className="space-y-2">
-                {displayAnalysis.action_items.map((item, idx) => (
+                {actionItems.map((item, idx) => (
                   <li key={idx} className="flex items-start gap-2 text-charcoal-700 dark:text-cream-200">
                     <span className="text-coral-500 mt-0.5">-</span>
                     <span>{item}</span>

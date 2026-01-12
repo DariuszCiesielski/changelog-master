@@ -88,15 +88,31 @@ export function parseChangelog(
   let currentVersion: ChangelogVersion | null = null;
 
   for (const line of lines) {
-    const versionMatch = line.match(/^##\s+\[?(\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?)\]?(?:\s*[-–]\s*(.+))?/);
+    // Support both ## [version] and # [version] formats (n8n uses single #)
+    const versionMatch = line.match(/^#{1,2}\s+\[?(\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?)\]?/);
 
     if (versionMatch) {
       if (currentVersion) {
         versions.push(currentVersion);
       }
+
+      // Extract date - try multiple formats:
+      // 1. n8n format: # [2.3.0](url) (2026-01-05) - date in parentheses at the end
+      // 2. Claude format: ## 1.0.50 - 2024-01-12 - date after dash
+      let date = '';
+      const dateInParensMatch = line.match(/\((\d{4}-\d{2}-\d{2})\)\s*$/);
+      if (dateInParensMatch) {
+        date = dateInParensMatch[1];
+      } else {
+        const dateAfterDashMatch = line.match(/[-–]\s*(\d{4}-\d{2}-\d{2}|\w+\s+\d+,?\s*\d{4})/);
+        if (dateAfterDashMatch) {
+          date = dateAfterDashMatch[1].trim();
+        }
+      }
+
       currentVersion = {
         version: versionMatch[1],
-        date: versionMatch[2]?.trim() || '',
+        date,
         items: [],
         sourceId,
         sourceName,
