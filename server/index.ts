@@ -205,17 +205,33 @@ async function fetchChangelog(url: string): Promise<string> {
   return response.text();
 }
 
-function parseLatestVersion(markdown: string): { version: string; content: string } | null {
+function parseLatestVersion(markdown: string): { version: string; content: string; date: string } | null {
   const lines = markdown.split('\n');
   let version = '';
+  let date = '';
   let content: string[] = [];
   let capturing = false;
 
   for (const line of lines) {
-    const versionMatch = line.match(/^##\s+\[?(\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?)\]?/);
+    // Support both ## [version] and # [version] formats (n8n uses single #)
+    const versionMatch = line.match(/^#{1,2}\s+\[?(\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?)\]?/);
     if (versionMatch) {
       if (capturing) break;
       version = versionMatch[1];
+
+      // Extract date - try multiple formats:
+      // 1. n8n format: # [2.3.0](url) (2026-01-05) - date in parentheses at the end
+      // 2. Claude format: ## 1.0.50 - 2024-01-12 - date after dash
+      const dateInParensMatch = line.match(/\((\d{4}-\d{2}-\d{2})\)\s*$/);
+      if (dateInParensMatch) {
+        date = dateInParensMatch[1];
+      } else {
+        const dateAfterDashMatch = line.match(/[-–]\s*(\d{4}-\d{2}-\d{2}|\w+\s+\d+,?\s*\d{4})/);
+        if (dateAfterDashMatch) {
+          date = dateAfterDashMatch[1].trim();
+        }
+      }
+
       capturing = true;
       content.push(line);
     } else if (capturing) {
@@ -223,7 +239,7 @@ function parseLatestVersion(markdown: string): { version: string; content: strin
     }
   }
 
-  return version ? { version, content: content.join('\n') } : null;
+  return version ? { version, content: content.join('\n'), date } : null;
 }
 
 interface ChangelogEmailRequest {
