@@ -33,7 +33,7 @@ npm start
 
 ### Backend (Express.js)
 - **Single file**: `server/index.ts` - all API routes, database setup, cron jobs
-- **Database**: SQLite via better-sqlite3 at `data/audio.db`
+- **Database**: Turso/LibSQL via @libsql/client (lokalnie: `local.db`, produkcja: Turso cloud)
 - **External APIs**: Gemini (analysis + TTS), Resend (email)
 
 ### Data Flow
@@ -62,7 +62,7 @@ User Request → Frontend Hook → Backend API → SQLite Cache / External API �
 
 ### Audio System
 - TTS via Gemini 2.5 Flash TTS API
-- Audio cached in SQLite as BLOB (keyed by text_hash + voice)
+- Audio cached in Turso/LibSQL as base64 (keyed by text_hash + voice)
 - Frontend caches last played audio in IndexedDB for instant restore
 
 ### Analysis Caching
@@ -75,15 +75,22 @@ User Request → Frontend Hook → Backend API → SQLite Cache / External API �
 VITE_GEMINI_API_KEY=  # Required - Gemini API for analysis and TTS
 RESEND_API_KEY=       # Optional - Email notifications
 NOTIFY_EMAIL=         # Optional - Recipient for notifications
+TURSO_DATABASE_URL=   # Optional - Turso database URL (puste = local.db)
+TURSO_AUTH_TOKEN=     # Optional - Turso auth token
 PORT=3001             # Backend port (Railway sets this)
 ```
 
 ## Deployment
 
-**Railway (full-stack)**:
+**Railway (full-stack) + Turso**:
+- Utwórz bazę na Turso: `turso db create changelog-master`
 - Build: `npm run build`
 - Start: `npm start`
 - Server serves static files from `dist/` in production
+- Ustaw `TURSO_DATABASE_URL` i `TURSO_AUTH_TOKEN`
+
+**Lokalny rozwój**:
+- Bez zmiennych Turso używa automatycznie `local.db`
 
 **Vercel (frontend only)**:
 - Requires separate backend deployment

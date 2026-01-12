@@ -300,6 +300,7 @@ function parseLatestVersion(markdown: string): { version: string; content: strin
 
 interface ChangelogEmailRequest {
   version: string;
+  sourceName?: string;
   tldr: string;
   categories: {
     critical_breaking_changes: string[];
@@ -314,10 +315,16 @@ interface ChangelogEmailRequest {
   sentiment: string;
 }
 
-async function analyzeChangelog(changelogText: string): Promise<ChangelogEmailRequest | null> {
+async function analyzeChangelog(changelogText: string, language: string = 'en'): Promise<ChangelogEmailRequest | null> {
   if (!GEMINI_API_KEY) return null;
 
-  const prompt = `Analyze this changelog and return JSON:
+  const languageInstruction = language === 'pl'
+    ? 'Respond entirely in Polish. All text in the JSON should be in Polish.'
+    : 'Respond entirely in English. All text in the JSON should be in English.';
+
+  const prompt = `${languageInstruction}
+
+Analyze this changelog and return JSON:
 {
   "tldr": "150-200 word summary",
   "categories": {
@@ -430,18 +437,21 @@ async function sendEmailWithAttachment(
   if (!RESEND_API_KEY || !NOTIFY_EMAIL) return false;
 
   const html = generateEmailHtml(data);
+  const sourceName = data.sourceName || 'Unknown';
+  const versionOnly = data.version.replace(`${sourceName} `, '');
 
   const emailPayload: Record<string, unknown> = {
     from: 'Changelog Tracker <onboarding@resend.dev>',
     to: [NOTIFY_EMAIL],
-    subject: `🆕 Claude Code ${data.version} Released`,
+    subject: `🆕 Changelog Tracker: ${sourceName} ${versionOnly} Released`,
     html,
   };
 
   if (audioBuffer) {
+    const safeSourceName = sourceName.toLowerCase().replace(/[^a-z0-9]/g, '-');
     emailPayload.attachments = [
       {
-        filename: `claude-code-${data.version}-summary.wav`,
+        filename: `${safeSourceName}-${versionOnly}-summary.wav`,
         content: audioBuffer.toString('base64'),
       },
     ];
@@ -509,8 +519,15 @@ async function checkSourceForNewChangelog(source: ChangelogSource): Promise<void
       console.log(`[Monitor] ${source.name}: Sending scheduled email for current version`);
     }
 
-    console.log(`[Monitor] Analyzing changelog for ${source.name}...`);
-    const analysis = await analyzeChangelog(latest.content);
+    // Get language setting
+    const languageSettingResult = await db.execute({
+      sql: 'SELECT value FROM settings WHERE key = ?',
+      args: ['notificationLanguage'],
+    });
+    const language = (languageSettingResult.rows[0]?.value as string) || 'en';
+
+    console.log(`[Monitor] Analyzing changelog for ${source.name} in ${language}...`);
+    const analysis = await analyzeChangelog(latest.content, language);
 
     if (!analysis) {
       console.log(`[Monitor] Failed to analyze changelog for ${source.name}`);
@@ -518,6 +535,7 @@ async function checkSourceForNewChangelog(source: ChangelogSource): Promise<void
     }
 
     analysis.version = `${source.name} ${latest.version}`;
+    analysis.sourceName = source.name;
 
     console.log(`[Monitor] Generating audio for ${source.name}...`);
     const voiceSettingResult = await db.execute({
@@ -749,8 +767,15 @@ app.post('/api/send-demo-email', async (req, res) => {
       return;
     }
 
-    console.log(`[Demo] Analyzing ${sourceName} version ${latest.version}...`);
-    const analysis = await analyzeChangelog(latest.content);
+    // Get language setting
+    const languageSettingResult = await db.execute({
+      sql: 'SELECT value FROM settings WHERE key = ?',
+      args: ['notificationLanguage'],
+    });
+    const language = (languageSettingResult.rows[0]?.value as string) || 'en';
+
+    console.log(`[Demo] Analyzing ${sourceName} version ${latest.version} in ${language}...`);
+    const analysis = await analyzeChangelog(latest.content, language);
 
     if (!analysis) {
       res.status(500).json({ success: false, error: 'Failed to analyze changelog' });
@@ -758,6 +783,7 @@ app.post('/api/send-demo-email', async (req, res) => {
     }
 
     analysis.version = `${sourceName} ${latest.version}`;
+    analysis.sourceName = sourceName;
 
     console.log('[Demo] Generating audio...');
     const audioBuffer = await generateTTSAudio(analysis.tldr, voice);

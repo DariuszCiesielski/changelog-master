@@ -72,6 +72,11 @@
     "evenWhenNoNewVersion": "Nawet gdy nie ma nowej wersji",
     "checkForNewVersions": "Sprawdzaj nowe wersje",
     "audioVoiceForEmail": "Głos audio dla załącznika email",
+    "notificationLanguage": "Język powiadomień",
+    "languages": {
+      "english": "English",
+      "polish": "Polski"
+    },
     "cronStatus": "Status crona:",
     "running": "Działa",
     "stopped": "Zatrzymany",

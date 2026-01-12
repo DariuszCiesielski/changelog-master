@@ -72,6 +72,11 @@
     "evenWhenNoNewVersion": "Even when no new version is released",
     "checkForNewVersions": "Check for new versions",
     "audioVoiceForEmail": "Audio voice for email attachment",
+    "notificationLanguage": "Notification language",
+    "languages": {
+      "english": "English",
+      "polish": "Polski"
+    },
     "cronStatus": "Cron status:",
     "running": "Running",
     "stopped": "Stopped",
