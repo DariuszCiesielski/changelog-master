@@ -35,6 +35,8 @@ export function useTheme() {
 
   const setDefaultTheme = (defaultTheme: Theme) => {
     localStorage.setItem('defaultTheme', defaultTheme);
+    // Also apply the theme immediately
+    setTheme(defaultTheme);
   };
 
   const getDefaultTheme = (): Theme => {
