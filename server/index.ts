@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import Database from 'better-sqlite3';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import cron, { ScheduledTask } from 'node-cron';
 
@@ -20,6 +21,13 @@ const NOTIFY_EMAIL = process.env.NOTIFY_EMAIL;
 
 // Initialize SQLite database
 const dbPath = path.join(__dirname, '..', 'data', 'audio.db');
+const dbDir = path.dirname(dbPath);
+
+// Ensure the database directory exists
+if (!fs.existsSync(dbDir)) {
+  fs.mkdirSync(dbDir, { recursive: true });
+}
+
 const db = new Database(dbPath);
 
 // Create tables
