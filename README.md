@@ -62,7 +62,18 @@ Gemini 3 Flash analyzes each changelog and extracts:
 - **Removals** - Features being deprecated with severity ratings
 - **Major Features** - New capabilities worth knowing
 - **Important Fixes** - Bugs that were squashed
-- **Action Items** - What you need to do
+
+### Multi-Language Support
+The app supports multiple languages for both UI and notifications:
+
+| Feature | Languages |
+|---------|-----------|
+| User Interface | English, Polish |
+| Email Notifications | English, Polish |
+| Audio Summaries (TTS) | English, Polish |
+| AI Analysis | English, Polish |
+
+Configure notification language in Settings to receive emails and audio in your preferred language.
 
 ### Analysis History
 Browse previous analyses for any changelog version. Never lose context when new versions overwrite the current view - just select from the history dropdown to revisit past summaries.
@@ -314,7 +325,13 @@ When you have multiple sources:
 3. Optionally enable **"Send email on every check"** for scheduled summaries (even without new versions)
 4. Select check frequency (e.g., "Every hour", "Once a week", "Every two weeks")
 5. Choose a voice for audio attachments
-6. Click **"Send Demo Email"** to test
+6. **Select notification language** (English or Polish) - affects both email content and audio
+7. Click **"Send Demo Email"** to test
+
+**Email format:**
+- Subject: `🆕 Changelog Tracker: {Source Name} {Version} Released`
+- Content: AI-generated summary in selected language
+- Attachment: Audio summary (WAV) in selected language
 
 ### Chatting About Changelogs
 
