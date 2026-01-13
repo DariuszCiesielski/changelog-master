@@ -1245,8 +1245,32 @@ app.get('/api/analysis', async (_req, res) => {
 });
 
 // Email endpoint
+// Helper function to safely convert item to string (handles objects from Gemini)
+function itemToString(item: unknown): string {
+  if (typeof item === 'string') {
+    return item;
+  }
+  if (item && typeof item === 'object') {
+    const obj = item as Record<string, unknown>;
+    // Try common property names that Gemini might use
+    if (typeof obj.description === 'string') return obj.description;
+    if (typeof obj.feature === 'string') return obj.feature;
+    if (typeof obj.name === 'string') return obj.name;
+    if (typeof obj.text === 'string') return obj.text;
+    if (typeof obj.title === 'string') return obj.title;
+    if (typeof obj.content === 'string') return obj.content;
+    if (typeof obj.summary === 'string') return obj.summary;
+    // Fallback to JSON stringification
+    return JSON.stringify(item);
+  }
+  return String(item);
+}
+
 function generateEmailHtml(data: ChangelogEmailRequest): string {
-  const { version, tldr, categories, action_items, sentiment } = data;
+  const { version: rawVersion, tldr, categories, action_items, sentiment } = data;
+
+  // Remove "Claude Code " prefix if present to avoid duplication in title
+  const version = rawVersion.replace(/^Claude Code\s+/i, '');
 
   const sentimentEmoji = sentiment === 'positive' ? '🎉' : sentiment === 'critical' ? '⚠️' : '📋';
 
@@ -1284,7 +1308,7 @@ function generateEmailHtml(data: ChangelogEmailRequest): string {
   <div class="section breaking">
     <h2>🚨 Critical Breaking Changes</h2>
     <ul>
-      ${categories.critical_breaking_changes.map((item) => `<li>${item}</li>`).join('')}
+      ${categories.critical_breaking_changes.map((item) => `<li>${itemToString(item)}</li>`).join('')}
     </ul>
   </div>
 `;
@@ -1306,7 +1330,7 @@ function generateEmailHtml(data: ChangelogEmailRequest): string {
   <div class="section feature">
     <h2>✨ Major Features</h2>
     <ul>
-      ${categories.major_features.map((item) => `<li>${item}</li>`).join('')}
+      ${categories.major_features.map((item) => `<li>${itemToString(item)}</li>`).join('')}
     </ul>
   </div>
 `;
@@ -1317,7 +1341,7 @@ function generateEmailHtml(data: ChangelogEmailRequest): string {
   <div class="section fix">
     <h2>🔧 Important Fixes</h2>
     <ul>
-      ${categories.important_fixes.map((item) => `<li>${item}</li>`).join('')}
+      ${categories.important_fixes.map((item) => `<li>${itemToString(item)}</li>`).join('')}
     </ul>
   </div>
 `;
@@ -1328,7 +1352,7 @@ function generateEmailHtml(data: ChangelogEmailRequest): string {
   <div class="section">
     <h2>📋 Action Items</h2>
     <ul>
-      ${action_items.map((item) => `<li>${item}</li>`).join('')}
+      ${action_items.map((item) => `<li>${itemToString(item)}</li>`).join('')}
     </ul>
   </div>
 `;
@@ -1360,6 +1384,9 @@ app.post('/api/send-changelog', async (req, res) => {
     const data = req.body as ChangelogEmailRequest;
     const html = generateEmailHtml(data);
 
+    // Clean version for subject (remove "Claude Code " prefix if present)
+    const cleanVersion = data.version.replace(/^Claude Code\s+/i, '');
+
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -1369,7 +1396,7 @@ app.post('/api/send-changelog', async (req, res) => {
       body: JSON.stringify({
         from: 'Changelog Tracker <onboarding@resend.dev>',
         to: [NOTIFY_EMAIL],
-        subject: `Claude Code ${data.version} Released`,
+        subject: `Claude Code ${cleanVersion} Released`,
         html,
       }),
     });
